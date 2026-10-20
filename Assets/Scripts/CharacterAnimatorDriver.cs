@@ -75,10 +75,12 @@ public sealed class CharacterAnimatorDriver : MonoBehaviour
         }
 
         characterAnimator.enabled = true;
-        characterAnimator.applyRootMotion = false;
+        characterAnimator.applyRootMotion = false; // Принудительно отключаем Root Motion
+        
         aimLayerIndex = characterAnimator.GetLayerIndex("Upper Body Aim");
         actionLayerIndex = characterAnimator.GetLayerIndex("Upper Body Actions");
         emptyActionStateHash = Animator.StringToHash("Upper Body Actions.AGC_Action_Empty");
+        
         if (aimLayerIndex >= 0)
         {
             characterAnimator.SetLayerWeight(aimLayerIndex, 0f);
@@ -130,15 +132,14 @@ public sealed class CharacterAnimatorDriver : MonoBehaviour
         Vector3 worldVelocity = GetWorldVelocity();
         Vector3 localVelocity = transform.InverseTransformDirection(worldVelocity);
         localVelocity.y = 0f;
+        
         float horizontalSpeed = localVelocity.magnitude;
-        float referenceSpeed = GetReferenceSpeed();
-        float moveAmount = referenceSpeed > 0f
-            ? Mathf.Clamp(horizontalSpeed / referenceSpeed, 0f, 1.7f)
-            : 0f;
 
-        characterAnimator.SetFloat(VelocityXId, horizontalSpeed > 0.05f ? localVelocity.x / horizontalSpeed : 0f, 0.1f, Time.deltaTime);
-        characterAnimator.SetFloat(VelocityYId, horizontalSpeed > 0.05f ? localVelocity.z / horizontalSpeed : 0f, 0.1f, Time.deltaTime);
-        characterAnimator.SetFloat(MoveAmountId, moveAmount, 0.1f, Time.deltaTime);
+        // ОТПРАВЛЯЕМ РЕАЛЬНУЮ СКОРОСТЬ (без деления)!
+        characterAnimator.SetFloat(VelocityXId, localVelocity.x, 0.1f, Time.deltaTime);
+        characterAnimator.SetFloat(VelocityYId, localVelocity.z, 0.1f, Time.deltaTime);
+        characterAnimator.SetFloat(MoveAmountId, horizontalSpeed, 0.1f, Time.deltaTime);
+        
         characterAnimator.SetBool(IsCrouchingId, playerController != null && playerController.IsCrouching);
         characterAnimator.SetBool(IsAimingId, CombatSettings.AimingEnabled && weaponController != null && weaponController.IsAiming);
         characterAnimator.SetBool(IsGroundedId, characterController == null || characterController.isGrounded);
@@ -163,22 +164,19 @@ public sealed class CharacterAnimatorDriver : MonoBehaviour
 
     private Vector3 GetWorldVelocity()
     {
-        if (navigationAgent != null &&
-            navigationAgent.isActiveAndEnabled &&
-            navigationAgent.isOnNavMesh &&
-            navigationAgent.hasPath &&
-            !navigationAgent.isStopped)
+        // Если есть NavMeshAgent, берем скорость с него (упрощено для стабильности)
+        if (navigationAgent != null && navigationAgent.isActiveAndEnabled && navigationAgent.isOnNavMesh)
         {
-            Vector3 agentVelocity = navigationAgent.velocity;
-            if (agentVelocity.sqrMagnitude > 0.0025f || characterController == null || !characterController.enabled)
-            {
-                return agentVelocity;
-            }
+            return navigationAgent.velocity;
         }
 
-        return characterController != null && characterController.enabled
-            ? characterController.velocity
-            : Vector3.zero;
+        // Если есть CharacterController, берем с него
+        if (characterController != null && characterController.enabled)
+        {
+            return characterController.velocity;
+        }
+
+        return Vector3.zero;
     }
 
     private float GetReferenceSpeed()
