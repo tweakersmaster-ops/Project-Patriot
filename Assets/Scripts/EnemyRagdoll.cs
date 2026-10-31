@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 
 [RequireComponent(typeof(Health))]
 public class EnemyRagdoll : MonoBehaviour
@@ -15,9 +16,13 @@ public class EnemyRagdoll : MonoBehaviour
 
     private Health health;
     private CharacterController characterController;
+    private CapsuleCollider capsuleCollider;
+    private NavMeshAgent navigationAgent;
     private GroundedEntity groundedEntity;
     private EnemyAI enemyAI;
+    private NPCFollow npcFollow;
     private TeamFollowPlayer teamFollowPlayer;
+    private CharacterAnimatorDriver animatorDriver;
     private Animator animator;
     private Rigidbody hipsBody;
     private bool isRagdoll;
@@ -31,15 +36,17 @@ public class EnemyRagdoll : MonoBehaviour
         health.OnDied += ActivateRagdoll;
 
         characterController = GetComponent<CharacterController>();
+        capsuleCollider = GetComponent<CapsuleCollider>();
+        navigationAgent = GetComponent<NavMeshAgent>();
         groundedEntity = GetComponent<GroundedEntity>();
         enemyAI = GetComponent<EnemyAI>();
+        npcFollow = GetComponent<NPCFollow>();
         teamFollowPlayer = GetComponent<TeamFollowPlayer>();
     }
 
     private void Start()
     {
-        Transform characterVisual = transform.Find("CharacterVisual");
-        Initialize(characterVisual);
+        Initialize(transform);
     }
 
     private void OnDestroy()
@@ -54,12 +61,22 @@ public class EnemyRagdoll : MonoBehaviour
     {
         if (characterVisual == null)
         {
-            return;
+            characterVisual = transform;
         }
 
-        animator = characterVisual.GetComponentInChildren<Animator>(true);
-        if (animator == null || animator.avatar == null || !animator.avatar.isHuman)
+        animator = null;
+        foreach (Animator candidate in characterVisual.GetComponentsInChildren<Animator>(true))
         {
+            if (candidate.avatar != null && candidate.avatar.isHuman)
+            {
+                animator = candidate;
+                break;
+            }
+        }
+
+        if (animator == null)
+        {
+            Debug.LogWarning("EnemyRagdoll could not find a humanoid Animator in the character hierarchy.", this);
             return;
         }
 
@@ -74,6 +91,7 @@ public class EnemyRagdoll : MonoBehaviour
 
         if (hips == null || spine == null || chest == null || head == null)
         {
+            Debug.LogWarning("EnemyRagdoll could not find the required humanoid bones.", this);
             return;
         }
 
@@ -198,9 +216,27 @@ public class EnemyRagdoll : MonoBehaviour
             enemyAI.StopNavigation();
             enemyAI.enabled = false;
         }
+        if (npcFollow != null)
+        {
+            npcFollow.enabled = false;
+        }
+        if (navigationAgent != null)
+        {
+            if (navigationAgent.isOnNavMesh)
+            {
+                navigationAgent.isStopped = true;
+                navigationAgent.ResetPath();
+            }
+            navigationAgent.enabled = false;
+        }
         if (groundedEntity != null)
         {
             groundedEntity.enabled = false;
+        }
+        animatorDriver = GetComponent<CharacterAnimatorDriver>();
+        if (animatorDriver != null)
+        {
+            animatorDriver.enabled = false;
         }
         if (animator != null)
         {
@@ -214,11 +250,16 @@ public class EnemyRagdoll : MonoBehaviour
         {
             characterController.enabled = false;
         }
+        if (capsuleCollider != null)
+        {
+            capsuleCollider.enabled = false;
+        }
 
         DropWeapon();
 
         if (ragdollBodies.Count == 0)
         {
+            Debug.LogWarning("EnemyRagdoll has no configured humanoid bodies; using the root-body fallback.", this);
             ActivateFallbackRagdoll();
             return;
         }
@@ -305,6 +346,8 @@ public class EnemyRagdoll : MonoBehaviour
             capsule = gameObject.AddComponent<CapsuleCollider>();
         }
 
+        capsule.enabled = true;
+        capsule.isTrigger = false;
         capsule.center = new Vector3(0f, 0.9f, 0f);
         capsule.height = 1.8f;
         capsule.radius = 0.28f;

@@ -18,7 +18,6 @@ public class TeamFollowPlayer : MonoBehaviour
     private AllyCombatAI allyCombatAI;
     private EnemyAI teamAI;
     private EnemyAI currentEnemy;
-    private float nextPlayerSearchTime;
     private float nextTargetSearchTime;
 
     private void OnEnable()
@@ -101,11 +100,8 @@ public class TeamFollowPlayer : MonoBehaviour
             }
         }
 
-        if (player == null && Time.time >= nextPlayerSearchTime)
-        {
-            player = FindObjectOfType<PlayerController>();
-            nextPlayerSearchTime = Time.time + 1f;
-        }
+        GameContext context = GameContext.Instance;
+        player = context != null ? context.Player : null;
 
         Vector3 horizontalMovement = Vector3.zero;
         if (player != null)
@@ -142,9 +138,11 @@ public class TeamFollowPlayer : MonoBehaviour
     private EnemyAI FindNearestEnemy()
     {
         EnemyAI nearestEnemy = null;
-        float nearestDistance = targetSearchRadius;
-        foreach (EnemyAI candidate in FindObjectsOfType<EnemyAI>())
+        float nearestDistanceSquared = targetSearchRadius * targetSearchRadius;
+        IReadOnlyList<EnemyAI> activeEnemies = EnemyAI.ActiveEnemyList;
+        for (int i = 0; i < activeEnemies.Count; i++)
         {
+            EnemyAI candidate = activeEnemies[i];
             if (candidate == null || candidate == teamAI || candidate.GetComponent<TeamFollowPlayer>() != null)
             {
                 continue;
@@ -156,10 +154,10 @@ public class TeamFollowPlayer : MonoBehaviour
                 continue;
             }
 
-            float distance = Vector3.Distance(transform.position, candidate.transform.position);
-            if (distance < nearestDistance)
+            float distanceSquared = (transform.position - candidate.transform.position).sqrMagnitude;
+            if (distanceSquared < nearestDistanceSquared)
             {
-                nearestDistance = distance;
+                nearestDistanceSquared = distanceSquared;
                 nearestEnemy = candidate;
             }
         }

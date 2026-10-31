@@ -1,11 +1,14 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class WeaponView : MonoBehaviour
 {
+    private static readonly Dictionary<Color, Material> PartMaterials = new Dictionary<Color, Material>();
+    private static Material muzzleFlashSharedMaterial;
+
     private GameObject weaponRoot;
     private ParticleSystem muzzleFlash;
     private Light muzzleLight;
-    private Material muzzleFlashMaterial;
     private float flashTimer;
     private float recoilAmount;
     private float bobTimer;
@@ -54,8 +57,8 @@ public class WeaponView : MonoBehaviour
     {
         if (weaponRoot != null)
         {
-            float moveX = Input.GetAxisRaw("Horizontal");
-            float moveY = Input.GetAxisRaw("Vertical");
+            float moveX = KeyBindings.Horizontal;
+            float moveY = KeyBindings.Vertical;
             float movementAmount = playerController != null
                 ? Mathf.Clamp01(playerController.CurrentHorizontalSpeed / Mathf.Max(playerController.sprintSpeed, 0.01f))
                 : Mathf.Clamp01(new Vector2(moveX, moveY).magnitude);
@@ -111,11 +114,6 @@ public class WeaponView : MonoBehaviour
             weaponController.OnAimChanged -= HandleAimChanged;
             weaponController.OnWeaponDrawChanged -= HandleWeaponDrawChanged;
         }
-
-        if (muzzleFlashMaterial != null)
-        {
-            Destroy(muzzleFlashMaterial);
-        }
     }
 
     private void CreateWeaponRoot()
@@ -166,9 +164,15 @@ public class WeaponView : MonoBehaviour
         }
         if (flashShader != null)
         {
-            muzzleFlashMaterial = new Material(flashShader);
-            muzzleFlashMaterial.color = new Color(1f, 0.55f, 0.1f, 1f);
-            flashRenderer.material = muzzleFlashMaterial;
+            if (muzzleFlashSharedMaterial == null)
+            {
+                muzzleFlashSharedMaterial = new Material(flashShader)
+                {
+                    color = new Color(1f, 0.55f, 0.1f, 1f)
+                };
+            }
+
+            flashRenderer.sharedMaterial = muzzleFlashSharedMaterial;
         }
 
         muzzleLight = muzzle.AddComponent<Light>();
@@ -233,6 +237,15 @@ public class WeaponView : MonoBehaviour
         Color accent = weapon.faction == WeaponFaction.German
             ? new Color(0.42f, 0.39f, 0.31f)
             : new Color(0.38f, 0.41f, 0.31f);
+
+        if (weapon.category == WeaponCategory.Melee)
+        {
+            muzzleFlash.gameObject.SetActive(false);
+            CreateMeleeModel(weapon.type);
+            return;
+        }
+
+        muzzleFlash.gameObject.SetActive(true);
 
         if (weapon.category == WeaponCategory.Grenade)
         {
@@ -354,6 +367,35 @@ public class WeaponView : MonoBehaviour
         }
     }
 
+    private void CreateMeleeModel(WeaponType type)
+    {
+        Color sleeve = new Color(0.24f, 0.28f, 0.22f);
+        Color skin = new Color(0.72f, 0.55f, 0.4f);
+        if (type == WeaponType.Hands)
+        {
+            CreatePart(PrimitiveType.Capsule, new Vector3(-0.19f, -0.2f, 0.24f),
+                new Vector3(0.12f, 0.38f, 0.12f), sleeve, Quaternion.Euler(90f, 0f, -12f));
+            CreatePart(PrimitiveType.Capsule, new Vector3(0.19f, -0.2f, 0.24f),
+                new Vector3(0.12f, 0.38f, 0.12f), sleeve, Quaternion.Euler(90f, 0f, 12f));
+            CreatePart(PrimitiveType.Sphere, new Vector3(-0.1f, -0.08f, 0.48f),
+                new Vector3(0.15f, 0.12f, 0.16f), skin);
+            CreatePart(PrimitiveType.Sphere, new Vector3(0.1f, -0.08f, 0.48f),
+                new Vector3(0.15f, 0.12f, 0.16f), skin);
+            return;
+        }
+
+        CreatePart(PrimitiveType.Capsule, new Vector3(0.2f, -0.2f, 0.22f),
+            new Vector3(0.12f, 0.38f, 0.12f), sleeve, Quaternion.Euler(90f, 0f, 12f));
+        CreatePart(PrimitiveType.Sphere, new Vector3(0.22f, -0.08f, 0.47f),
+            new Vector3(0.15f, 0.12f, 0.16f), skin);
+        CreatePart(PrimitiveType.Cube, new Vector3(0.22f, -0.02f, 0.57f),
+            new Vector3(0.075f, 0.08f, 0.2f), new Color(0.25f, 0.16f, 0.1f),
+            Quaternion.Euler(-18f, 0f, 0f));
+        CreatePart(PrimitiveType.Cube, new Vector3(0.22f, 0.04f, 0.79f),
+            new Vector3(0.045f, 0.035f, 0.28f), new Color(0.72f, 0.74f, 0.7f),
+            Quaternion.Euler(-18f, 0f, 0f));
+    }
+
     private void CreatePart(
         PrimitiveType shape,
         Vector3 position,
@@ -371,7 +413,7 @@ public class WeaponView : MonoBehaviour
         }
 
         Renderer partRenderer = part.GetComponent<Renderer>();
-        partRenderer.material.color = color;
+        partRenderer.sharedMaterial = GetPartMaterial(color);
         Collider partCollider = part.GetComponent<Collider>();
         if (partCollider != null)
         {
@@ -379,9 +421,32 @@ public class WeaponView : MonoBehaviour
         }
     }
 
+    private static Material GetPartMaterial(Color color)
+    {
+        if (PartMaterials.TryGetValue(color, out Material material))
+        {
+            return material;
+        }
+
+        Shader shader = Shader.Find("Standard");
+        if (shader == null)
+        {
+            Debug.LogError("Could not find the Standard shader for weapon view materials.");
+            return null;
+        }
+
+        material = new Material(shader)
+        {
+            color = color
+        };
+        PartMaterials.Add(color, material);
+        return material;
+    }
+
     private void OnWeaponFired(WeaponDefinition weapon)
     {
         if (weapon == null || weapon.category == WeaponCategory.Grenade ||
+            weapon.category == WeaponCategory.Melee ||
             muzzleLight == null || muzzleFlash == null)
         {
             return;

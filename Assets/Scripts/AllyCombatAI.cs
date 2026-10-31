@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(WeaponController))]
@@ -77,17 +78,20 @@ public sealed class AllyCombatAI : MonoBehaviour
 
     private Transform FindNearestEnemy()
     {
-        GameObject[] enemies = GameObject.FindGameObjectsWithTag(enemyTag);
         Transform nearest = null;
         float nearestDistanceSquared = searchRadius * searchRadius;
-        foreach (GameObject enemy in enemies)
+        IReadOnlyList<EnemyAI> activeEnemies = EnemyAI.ActiveEnemyList;
+        for (int i = 0; i < activeEnemies.Count; i++)
         {
-            if (enemy == null || enemy.transform == transform || enemy.transform.IsChildOf(transform))
+            EnemyAI enemyAI = activeEnemies[i];
+            if (enemyAI == null)
             {
                 continue;
             }
 
-            if (enemy.CompareTag("team"))
+            Transform enemy = enemyAI.transform;
+            if (enemy == transform || enemy.IsChildOf(transform) ||
+                !enemy.CompareTag(enemyTag) || enemy.CompareTag("team"))
             {
                 continue;
             }

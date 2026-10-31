@@ -122,7 +122,7 @@ public sealed class CharacterAnimatorDriver : MonoBehaviour
         }
     }
 
-    private void Update()
+    private void LateUpdate()
     {
         if (characterAnimator == null)
         {
@@ -134,11 +134,14 @@ public sealed class CharacterAnimatorDriver : MonoBehaviour
         localVelocity.y = 0f;
         
         float horizontalSpeed = localVelocity.magnitude;
+        float referenceSpeed = GetReferenceSpeed();
+        Vector2 blendVelocity = Vector2.ClampMagnitude(
+            new Vector2(localVelocity.x, localVelocity.z) * (2f / referenceSpeed),
+            2f);
 
-        // ОТПРАВЛЯЕМ РЕАЛЬНУЮ СКОРОСТЬ (без деления)!
-        characterAnimator.SetFloat(VelocityXId, localVelocity.x, 0.1f, Time.deltaTime);
-        characterAnimator.SetFloat(VelocityYId, localVelocity.z, 0.1f, Time.deltaTime);
-        characterAnimator.SetFloat(MoveAmountId, horizontalSpeed, 0.1f, Time.deltaTime);
+        characterAnimator.SetFloat(VelocityXId, blendVelocity.x, 0.1f, Time.deltaTime);
+        characterAnimator.SetFloat(VelocityYId, blendVelocity.y, 0.1f, Time.deltaTime);
+        characterAnimator.SetFloat(MoveAmountId, Mathf.Clamp01(horizontalSpeed / referenceSpeed), 0.1f, Time.deltaTime);
         
         characterAnimator.SetBool(IsCrouchingId, playerController != null && playerController.IsCrouching);
         characterAnimator.SetBool(IsAimingId, CombatSettings.AimingEnabled && weaponController != null && weaponController.IsAiming);
@@ -194,6 +197,11 @@ public sealed class CharacterAnimatorDriver : MonoBehaviour
         if (teamFollowPlayer != null)
         {
             return Mathf.Max(teamFollowPlayer.followSpeed, 0.01f);
+        }
+
+        if (navigationAgent != null)
+        {
+            return Mathf.Max(navigationAgent.speed, 0.01f);
         }
 
         return 5f;

@@ -8,6 +8,7 @@ public class Health : MonoBehaviour
 
     public event Action<Health, float> OnDamaged;
     public event Action<Health> OnDied;
+    public static event Action<Health> AnyEntityDied;
 
     [SerializeField] private float currentHealth;
 
@@ -50,9 +51,20 @@ public class Health : MonoBehaviour
         currentHealth = maxHealth;
     }
 
+    public void RestoreForSave(float savedHealth)
+    {
+        bool wasAlive = !IsDead;
+        currentHealth = Mathf.Clamp(savedHealth, 0f, maxHealth);
+        if (wasAlive && IsDead)
+        {
+            Die();
+        }
+    }
+
     private void Die()
     {
         OnDied?.Invoke(this);
+        AnyEntityDied?.Invoke(this);
 
         if (destroyOnDeath)
         {

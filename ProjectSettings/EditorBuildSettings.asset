@@ -6,6 +6,15 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/Scenes/MainMenu.unity
+    guid: b50519a6cac359044a167a27c405d56a
+  - enabled: 1
+    path: Assets/Scenes/maps/Polock/Polock.unity
+    guid: 21f5c2423c5600e4c8c45abcfc047b27
+  - enabled: 1
+    path: Assets/Scenes/maps/Train(dzvina)/Most.unity
+    guid: f1a78c669d915dc40b2d0cf5e46033ec
+  - enabled: 1
     path: Assets/Scenes/SampleScene.unity
     guid: 9fc0d4010bbf28b4594072e72b8655ab
   m_configObjects: {}

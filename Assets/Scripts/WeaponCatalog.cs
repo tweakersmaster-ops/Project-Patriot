@@ -43,18 +43,14 @@ public static class WeaponCatalog
         Create(WeaponType.PTRS41, WeaponFaction.Soviet, WeaponCategory.Rifle, WeaponFiringMode.SemiAutomatic, WeaponBehavior.Hitscan, "PTRS-41", 100f, 190f, 0.65f, 5, 20, 2.8f, 0.035f, true),
         Create(WeaponType.F1, WeaponFaction.Soviet, WeaponCategory.Grenade, WeaponFiringMode.Thrown, WeaponBehavior.Grenade, "F-1", 120f, 30f, 1.1f, 1, 3, 1.1f, 0.025f, false, 13f, 8f, 0.32f),
         Create(WeaponType.RGD33, WeaponFaction.Soviet, WeaponCategory.Grenade, WeaponFiringMode.Thrown, WeaponBehavior.Grenade, "RGD-33", 95f, 34f, 1.2f, 1, 3, 1.2f, 0.025f, false, 13f, 6f, 0.3f),
-        Create(WeaponType.RPG43, WeaponFaction.Soviet, WeaponCategory.Grenade, WeaponFiringMode.Thrown, WeaponBehavior.Grenade, "RPG-43", 160f, 24f, 1.35f, 1, 2, 1.3f, 0.025f, false, 15f, 4.5f, 0.24f)
+        Create(WeaponType.RPG43, WeaponFaction.Soviet, WeaponCategory.Grenade, WeaponFiringMode.Thrown, WeaponBehavior.Grenade, "RPG-43", 160f, 24f, 1.35f, 1, 2, 1.3f, 0.025f, false, 15f, 4.5f, 0.24f),
+        Create(WeaponType.Hands, WeaponFaction.Soviet, WeaponCategory.Melee, WeaponFiringMode.SemiAutomatic, WeaponBehavior.Melee, "Hands", 12f, 1.6f, 0.45f, 0, 0, 0f, 0f),
+        Create(WeaponType.Knife, WeaponFaction.Soviet, WeaponCategory.Melee, WeaponFiringMode.SemiAutomatic, WeaponBehavior.Melee, "Knife", 35f, 2f, 0.65f, 0, 0, 0f, 0f)
     };
 
     public static WeaponDefinition[] GetAll()
     {
-        WeaponDefinition[] copy = new WeaponDefinition[Definitions.Length];
-        for (int i = 0; i < Definitions.Length; i++)
-        {
-            copy[i] = Copy(Definitions[i]);
-        }
-
-        return copy;
+        return (WeaponDefinition[])Definitions.Clone();
     }
 
     public static WeaponDefinition Get(WeaponType type)
@@ -63,7 +59,7 @@ public static class WeaponCatalog
         {
             if (Definitions[i].type == type)
             {
-                return Copy(Definitions[i]);
+                return Definitions[i];
             }
         }
 
@@ -115,33 +111,6 @@ public static class WeaponCatalog
             projectileSpeed = projectileSpeed,
             blastRadius = blastRadius,
             throwArc = throwArc
-        };
-    }
-
-    private static WeaponDefinition Copy(WeaponDefinition source)
-    {
-        return new WeaponDefinition
-        {
-            type = source.type,
-            faction = source.faction,
-            category = source.category,
-            firingMode = source.firingMode,
-            behavior = source.behavior,
-            displayName = source.displayName,
-            damage = source.damage,
-            range = source.range,
-            fireRate = source.fireRate,
-            magazineSize = source.magazineSize,
-            reserveAmmo = source.reserveAmmo,
-            reloadTime = source.reloadTime,
-            spread = source.spread,
-            muzzleColor = source.muzzleColor,
-            localPosition = source.localPosition,
-            canAim = source.canAim,
-            aimZoom = source.aimZoom,
-            projectileSpeed = source.projectileSpeed,
-            blastRadius = source.blastRadius,
-            throwArc = source.throwArc
         };
     }
 }

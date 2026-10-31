@@ -3,6 +3,15 @@ using UnityEngine;
 
 public sealed class WeaponProjectile : MonoBehaviour
 {
+    private static readonly PhysicMaterial GrenadeBounceMaterial = new PhysicMaterial("Grenade Bounce")
+    {
+        bounciness = 0.45f,
+        dynamicFriction = 0.3f,
+        staticFriction = 0.3f,
+        bounceCombine = PhysicMaterialCombine.Maximum,
+        frictionCombine = PhysicMaterialCombine.Minimum
+    };
+
     private Rigidbody body;
     private WeaponDefinition definition;
     private Health owner;
@@ -25,10 +34,17 @@ public sealed class WeaponProjectile : MonoBehaviour
         GameObject projectileObject = new GameObject(weapon.displayName + " Projectile");
         projectileObject.transform.SetPositionAndRotation(position, Quaternion.LookRotation(direction));
         SphereCollider collider = projectileObject.AddComponent<SphereCollider>();
-        collider.radius = weapon.behavior == WeaponBehavior.Grenade ? 0.12f : 0.09f;
+        bool isGrenade = weapon.behavior == WeaponBehavior.Grenade;
+        collider.radius = isGrenade ? 0.12f : 0.09f;
+        if (isGrenade)
+        {
+            collider.sharedMaterial = GrenadeBounceMaterial;
+        }
+
         Rigidbody projectileBody = projectileObject.AddComponent<Rigidbody>();
         projectileBody.mass = weapon.behavior == WeaponBehavior.Grenade ? 0.35f : 0.5f;
         projectileBody.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+        projectileBody.interpolation = RigidbodyInterpolation.Interpolate;
         WeaponProjectile projectile = projectileObject.AddComponent<WeaponProjectile>();
         projectile.Initialize(projectileBody, weapon, projectileOwner, direction);
         return projectile;
@@ -108,7 +124,10 @@ public sealed class WeaponProjectile : MonoBehaviour
             return;
         }
 
-        Explode();
+        if (definition.behavior != WeaponBehavior.Grenade)
+        {
+            Explode();
+        }
     }
 
     private void Explode()

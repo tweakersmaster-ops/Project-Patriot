@@ -41,7 +41,9 @@ public enum WeaponType
     PTRS41,
     F1,
     RGD33,
-    RPG43
+    RPG43,
+    Hands,
+    Knife
 }
 
 public enum WeaponFaction
@@ -58,7 +60,8 @@ public enum WeaponCategory
     Rifle,
     MachineGun,
     Launcher,
-    Grenade
+    Grenade,
+    Melee
 }
 
 public enum WeaponFiringMode
@@ -74,7 +77,8 @@ public enum WeaponBehavior
 {
     Hitscan,
     Rocket,
-    Grenade
+    Grenade,
+    Melee
 }
 
 [System.Serializable]

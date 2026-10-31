@@ -6,18 +6,21 @@ using UnityEngine.UI;
 public class GameMenuManager : MonoBehaviour
 {
     private const string MasterVolumePreference = "MasterVolume";
+    private const string MainMenuSceneName = "MainMenu";
+    private const float AutosaveIntervalSeconds = 180f;
 
     public static GameMenuManager Instance { get; private set; }
 
     public bool IsPaused => GameContext.Instance != null && GameContext.Instance.IsPaused;
-    private const string DebugSceneName = "SampleScene";
 
     private Canvas menuCanvas;
-    private GameObject mainMenuPanel;
     private GameObject menuPanel;
     private GameObject deathPanel;
     private GameObject settingsPanel;
+    private GameObject exitConfirmPanel;
+    private GameObject createdEventSystem;
     private Slider volumeSlider;
+    private float autosaveTimer;
 
     private void Awake()
     {
@@ -33,14 +36,35 @@ public class GameMenuManager : MonoBehaviour
         {
             GameContext.Instance.PlayerDied += ShowDeathScreen;
         }
-        ShowMainMenu();
+
+        // Главное меню — отдельная сцена, поэтому в игровой сцене старую панель не показываем
+        if (menuCanvas != null)
+        {
+            menuCanvas.enabled = false;
+        }
     }
 
     private void Update()
     {
+        if (!IsPaused)
+        {
+            autosaveTimer += Time.unscaledDeltaTime;
+            if (autosaveTimer >= AutosaveIntervalSeconds)
+            {
+                autosaveTimer = 0f;
+                SaveSystem.SaveCurrentGame();
+            }
+        }
+
         if (Input.GetKeyDown(KeyCode.Escape))
         {
-            if ((mainMenuPanel != null && mainMenuPanel.activeSelf) || (deathPanel != null && deathPanel.activeSelf))
+            if (exitConfirmPanel != null && exitConfirmPanel.activeSelf)
+            {
+                HideExitConfirmation();
+                return;
+            }
+
+            if (deathPanel != null && deathPanel.activeSelf)
             {
                 return;
             }
@@ -74,14 +98,12 @@ public class GameMenuManager : MonoBehaviour
         SetPaused(true);
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
+        EnsureEventSystem();
         if (menuCanvas != null)
         {
             menuCanvas.enabled = true;
         }
-        if (mainMenuPanel != null)
-        {
-            mainMenuPanel.SetActive(false);
-        }
+        HideExitConfirmation();
         if (menuPanel != null)
         {
             menuPanel.SetActive(true);
@@ -101,10 +123,6 @@ public class GameMenuManager : MonoBehaviour
         {
             menuPanel.SetActive(false);
         }
-        if (mainMenuPanel != null)
-        {
-            mainMenuPanel.SetActive(false);
-        }
         if (settingsPanel != null)
         {
             settingsPanel.SetActive(false);
@@ -113,6 +131,7 @@ public class GameMenuManager : MonoBehaviour
         {
             deathPanel.SetActive(false);
         }
+        HideExitConfirmation();
     }
 
     private void ShowDeathScreen(Health health)
@@ -120,9 +139,10 @@ public class GameMenuManager : MonoBehaviour
         SetPaused(true);
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
+        EnsureEventSystem();
         menuCanvas.enabled = true;
-        mainMenuPanel.SetActive(false);
         menuPanel.SetActive(false);
+        HideExitConfirmation();
         deathPanel.SetActive(true);
     }
 
@@ -136,59 +156,80 @@ public class GameMenuManager : MonoBehaviour
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
-    public void ShowMainMenu()
+    // Главное меню живёт в отдельной сцене: выходим в неё, а не показываем старую панель поверх игра
+    public void ReturnToMainMenu()
     {
-        SetPaused(true);
+        SetPaused(false);
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
-
-        if (menuCanvas != null)
-        {
-            menuCanvas.enabled = true;
-        }
-        if (mainMenuPanel != null)
-        {
-            mainMenuPanel.SetActive(true);
-        }
-        if (menuPanel != null)
-        {
-            menuPanel.SetActive(false);
-        }
-        if (settingsPanel != null)
-        {
-            settingsPanel.SetActive(false);
-        }
-        if (deathPanel != null)
-        {
-            deathPanel.SetActive(false);
-        }
+        DestroyCreatedEventSystem();
+        SceneManager.LoadScene(MainMenuSceneName);
     }
 
-    public void StartDebugMap()
+    // EventSystem создаём только когда действительно открывается меню паузы,
+    // чтобы не плодить дубликаты с EventSystem сцены главного меню
+    private void EnsureEventSystem()
     {
-        LoadSceneByName(DebugSceneName);
-    }
-
-    public void LoadSceneByName(string sceneName)
-    {
-        if (string.IsNullOrEmpty(sceneName))
+        if (createdEventSystem != null || FindObjectOfType<EventSystem>() != null)
         {
             return;
         }
 
-        int sceneIndex = SceneUtility.GetBuildIndexByScenePath("Assets/Scenes/" + sceneName + ".unity");
-        if (sceneIndex >= 0)
+        createdEventSystem = new GameObject("EventSystem");
+        createdEventSystem.AddComponent<EventSystem>();
+        createdEventSystem.AddComponent<StandaloneInputModule>();
+    }
+
+    private void DestroyCreatedEventSystem()
+    {
+        if (createdEventSystem == null)
         {
-            if (GameContext.Instance != null)
-            {
-                GameContext.Instance.PrepareForGameplayScene();
-            }
-            ResumeGame();
-            SceneManager.LoadScene(sceneIndex);
             return;
         }
 
-        Debug.LogWarning("Requested scene was not found in build settings: " + sceneName, this);
+        createdEventSystem.SetActive(false);
+        Destroy(createdEventSystem);
+        createdEventSystem = null;
+    }
+
+    public void ShowExitConfirmation()
+    {
+        if (exitConfirmPanel != null)
+        {
+            exitConfirmPanel.SetActive(true);
+        }
+    }
+
+    public void HideExitConfirmation()
+    {
+        if (exitConfirmPanel != null)
+        {
+            exitConfirmPanel.SetActive(false);
+        }
+    }
+
+    // «Отмена» — возвращаемся в меню паузы
+    public void CancelExit()
+    {
+        HideExitConfirmation();
+    }
+
+    // «Всё равно выйти» — выходим без сохранения
+    public void ExitWithoutSaving()
+    {
+        ReturnToMainMenu();
+    }
+
+    // «Сохранить и выйти»
+    public void SaveAndExit()
+    {
+        SaveSystem.SaveCurrentGame();
+        ReturnToMainMenu();
+    }
+
+    public void SaveGame()
+    {
+        SaveSystem.SaveCurrentGame();
     }
 
     private void SetPaused(bool paused)
@@ -214,32 +255,11 @@ public class GameMenuManager : MonoBehaviour
 
     public void QuitToMenu()
     {
-        ShowMainMenu();
-    }
-
-    public void QuitGame()
-    {
-        Application.Quit();
+        ShowExitConfirmation();
     }
 
     private void CreateMenuUI()
     {
-        EventSystem eventSystem = FindObjectOfType<EventSystem>();
-        if (eventSystem == null)
-        {
-            GameObject eventSystemObject = new GameObject("EventSystem");
-            eventSystemObject.transform.SetParent(transform, false);
-            eventSystem = eventSystemObject.AddComponent<EventSystem>();
-        }
-        else if (eventSystem.transform.root != transform.root)
-        {
-            eventSystem.transform.SetParent(transform, false);
-        }
-        if (eventSystem.GetComponent<BaseInputModule>() == null)
-        {
-            eventSystem.gameObject.AddComponent<StandaloneInputModule>();
-        }
-
         GameObject canvasObject = new GameObject("PauseCanvas");
         canvasObject.transform.SetParent(transform, false);
 
@@ -249,21 +269,6 @@ public class GameMenuManager : MonoBehaviour
 
         canvasObject.AddComponent<CanvasScaler>();
         canvasObject.AddComponent<GraphicRaycaster>();
-
-        mainMenuPanel = new GameObject("MapSelectionPanel");
-        mainMenuPanel.transform.SetParent(canvasObject.transform, false);
-
-        RectTransform mainRect = mainMenuPanel.AddComponent<RectTransform>();
-        mainRect.anchorMin = new Vector2(0.5f, 0.5f);
-        mainRect.anchorMax = new Vector2(0.5f, 0.5f);
-        mainRect.sizeDelta = new Vector2(500f, 300f);
-
-        Image mainImage = mainMenuPanel.AddComponent<Image>();
-        mainImage.color = new Color(0.06f, 0.08f, 0.09f, 0.96f);
-
-        CreateText(mainMenuPanel.transform, "ВЫБОР КАРТЫ", 30, TextAnchor.MiddleCenter, new Vector2(0.5f, 1f), new Vector2(0f, -55f), Color.white);
-        CreateButton(mainMenuPanel.transform, "Тестовая карта", new Vector2(0.5f, 0.62f), new Vector2(340f, 64f), StartDebugMap);
-        CreateButton(mainMenuPanel.transform, "Выход из игры", new Vector2(0.5f, 0.3f), new Vector2(340f, 64f), QuitGame);
 
         deathPanel = new GameObject("DeathPanel");
         deathPanel.transform.SetParent(canvasObject.transform, false);
@@ -275,7 +280,7 @@ public class GameMenuManager : MonoBehaviour
         deathImage.color = new Color(0.12f, 0.04f, 0.04f, 0.97f);
         CreateText(deathPanel.transform, "ВЫ ПОГИБЛИ", 32, TextAnchor.MiddleCenter, new Vector2(0.5f, 1f), new Vector2(0f, -55f), Color.white);
         CreateButton(deathPanel.transform, "Заново", new Vector2(0.5f, 0.58f), new Vector2(300f, 60f), RestartCurrentScene);
-        CreateButton(deathPanel.transform, "В меню выбора карт", new Vector2(0.5f, 0.34f), new Vector2(300f, 60f), ShowMainMenu);
+        CreateButton(deathPanel.transform, "В меню", new Vector2(0.5f, 0.34f), new Vector2(300f, 60f), ShowExitConfirmation);
         deathPanel.SetActive(false);
 
         menuPanel = new GameObject("MenuPanel");
@@ -293,9 +298,9 @@ public class GameMenuManager : MonoBehaviour
         CreateText(menuPanel.transform, "ПАУЗА", 32, TextAnchor.MiddleCenter, new Vector2(0.5f, 1f), new Vector2(0, -55f), Color.white);
 
         CreateButton(menuPanel.transform, "Продолжить", new Vector2(0.5f, 0.7f), new Vector2(250f, 60f), ResumeGame);
-        CreateButton(menuPanel.transform, "Настройки", new Vector2(0.5f, 0.5f), new Vector2(250f, 60f), ToggleSettings);
-        CreateButton(menuPanel.transform, "Выбор карты", new Vector2(0.5f, 0.3f), new Vector2(250f, 60f), QuitToMenu);
-        CreateButton(menuPanel.transform, "Выход из игры", new Vector2(0.5f, 0.1f), new Vector2(250f, 60f), QuitGame);
+        CreateButton(menuPanel.transform, "Сохраниться", new Vector2(0.5f, 0.58f), new Vector2(250f, 60f), SaveGame);
+        CreateButton(menuPanel.transform, "Настройки", new Vector2(0.5f, 0.45f), new Vector2(250f, 60f), ToggleSettings);
+        CreateButton(menuPanel.transform, "Выход в меню", new Vector2(0.5f, 0.3f), new Vector2(250f, 60f), QuitToMenu);
 
         settingsPanel = new GameObject("SettingsPanel");
         settingsPanel.transform.SetParent(menuPanel.transform, false);
@@ -359,6 +364,48 @@ public class GameMenuManager : MonoBehaviour
         volumeSlider.handleRect = handleRect;
 
         CreateButton(settingsPanel.transform, "Назад", new Vector2(0.5f, 0.18f), new Vector2(200f, 50f), ToggleSettings);
+
+        // Предупреждение о потере несохранённого прогресса
+        exitConfirmPanel = new GameObject("ExitConfirmPanel");
+        exitConfirmPanel.transform.SetParent(canvasObject.transform, false);
+
+        RectTransform confirmRect = exitConfirmPanel.AddComponent<RectTransform>();
+        confirmRect.anchorMin = new Vector2(0.5f, 0.5f);
+        confirmRect.anchorMax = new Vector2(0.5f, 0.5f);
+        confirmRect.sizeDelta = new Vector2(780f, 360f);
+        confirmRect.anchoredPosition = Vector2.zero;
+
+        Image confirmImage = exitConfirmPanel.AddComponent<Image>();
+        confirmImage.color = new Color(0.08f, 0.09f, 0.12f, 0.98f);
+
+        CreateText(exitConfirmPanel.transform, "ВЫЙТИ В ГЛАВНОЕ МЕНЮ?", 30, TextAnchor.MiddleCenter,
+            new Vector2(0.5f, 1f), new Vector2(0f, -55f), Color.white);
+
+        GameObject warningObject = CreateText(exitConfirmPanel.transform,
+            "Весь несохранённый прогресс будет утерян.", 20, TextAnchor.MiddleCenter,
+            new Vector2(0.5f, 1f), new Vector2(0f, -125f), new Color(0.95f, 0.7f, 0.6f, 1f));
+        warningObject.GetComponent<RectTransform>().sizeDelta = new Vector2(720f, 80f);
+
+        Button cancelButton = CreateButton(exitConfirmPanel.transform, "Отмена",
+            new Vector2(0.5f, 0f), new Vector2(210f, 60f), CancelExit);
+        cancelButton.GetComponent<RectTransform>().anchoredPosition = new Vector2(-240f, 70f);
+
+        Button exitButton = CreateButton(exitConfirmPanel.transform, "Всё равно выйти",
+            new Vector2(0.5f, 0f), new Vector2(210f, 60f), ExitWithoutSaving);
+        exitButton.GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, 70f);
+
+        // Кнопка сохранения выделена белым фоном, остальные — обычные
+        Button saveExitButton = CreateButton(exitConfirmPanel.transform, "Сохранить и выйти",
+            new Vector2(0.5f, 0f), new Vector2(210f, 60f), SaveAndExit);
+        saveExitButton.GetComponent<RectTransform>().anchoredPosition = new Vector2(240f, 70f);
+        saveExitButton.GetComponent<Image>().color = Color.white;
+        Text saveExitLabel = saveExitButton.GetComponentInChildren<Text>();
+        if (saveExitLabel != null)
+        {
+            saveExitLabel.color = new Color(0.10f, 0.13f, 0.16f, 1f);
+        }
+
+        exitConfirmPanel.SetActive(false);
     }
 
     private void SetMasterVolume(float volume)
@@ -383,7 +430,10 @@ public class GameMenuManager : MonoBehaviour
 
         Button button = buttonObject.AddComponent<Button>();
         button.targetGraphic = buttonImage;
-        button.onClick.AddListener(onClick);
+        if (onClick != null)
+        {
+            button.onClick.AddListener(onClick);
+        }
 
         GameObject labelObject = new GameObject("Label");
         labelObject.transform.SetParent(buttonObject.transform, false);

@@ -24,6 +24,9 @@ public class WeaponController : MonoBehaviour
 
     [SerializeField] private List<WeaponDefinition> weapons = new List<WeaponDefinition>();
     [SerializeField] private int currentWeaponIndex = 0;
+    [Header("Стартовый набор (если пусто — руки и нож)")]
+    [SerializeField] private List<WeaponType> startingWeapons = new List<WeaponType>();
+    [SerializeField] private WeaponType startingWeapon = WeaponType.Hands;
     [SerializeField] private Transform firePoint;
     [SerializeField] private Camera playerCamera;
     [SerializeField, Min(1f)] private float mosinAimZoom = 2.7f;
@@ -40,6 +43,7 @@ public class WeaponController : MonoBehaviour
     private Transform aiTarget;
     private bool weaponIsDrawn;
     private readonly Dictionary<WeaponType, AmmoState> ammoByWeapon = new Dictionary<WeaponType, AmmoState>();
+    private readonly RaycastHit[] hitBuffer = new RaycastHit[32];
 
     public event Action<WeaponDefinition> OnWeaponSwitched;
     public event Action<WeaponDefinition> OnWeaponFired;
@@ -57,7 +61,11 @@ public class WeaponController : MonoBehaviour
     private void Start()
     {
         hasStarted = true;
-        playerCamera = GetComponentInChildren<Camera>();
+        if (playerCamera == null)
+        {
+            playerCamera = GetComponentInChildren<Camera>(true);
+        }
+
         if (playerCamera != null)
         {
             defaultCameraFieldOfView = playerCamera.fieldOfView;
@@ -74,7 +82,16 @@ public class WeaponController : MonoBehaviour
         SetAiming(false);
         BuildDefaultWeapons();
         EnsureFirePoint();
-        EquipWeapon(isAIControlled ? aiWeaponType : WeaponType.Mosin);
+        EquipStartingWeapon();
+    }
+
+    private void EquipStartingWeapon()
+    {
+        EquipWeapon(isAIControlled ? aiWeaponType : startingWeapon);
+        if (!hasEquippedWeapon && weapons.Count > 0)
+        {
+            EquipWeapon(weapons[0].type);
+        }
     }
 
     public void ConfigureAIWeapon(WeaponType weaponType)
@@ -131,31 +148,39 @@ public class WeaponController : MonoBehaviour
         }
 
         SetAiming(CombatSettings.AimingEnabled &&
-                  Input.GetMouseButton(1) &&
+                  KeyBindings.GetKey(BindableAction.Aim) &&
                   CurrentWeapon != null &&
                   CurrentWeapon.canAim &&
                   !isReloading);
         UpdateAimZoom();
 
-        if (Input.GetKeyDown(KeyCode.Alpha1))
+        if (KeyBindings.GetKeyDown(BindableAction.Slot1))
         {
             EquipWeapon(WeaponType.Mosin);
         }
-        else if (Input.GetKeyDown(KeyCode.Alpha2))
+        else if (KeyBindings.GetKeyDown(BindableAction.Slot2))
         {
             EquipWeapon(WeaponType.PPSH);
         }
-        else if (Input.GetKeyDown(KeyCode.Alpha3))
+        else if (KeyBindings.GetKeyDown(BindableAction.Slot3))
         {
             EquipWeapon(WeaponType.MP40);
         }
-        else if (Input.GetKeyDown(KeyCode.Alpha4))
+        else if (KeyBindings.GetKeyDown(BindableAction.Slot4))
         {
             EquipWeapon(WeaponType.Sturmgewehr);
         }
-        else if (Input.GetKeyDown(KeyCode.Alpha5))
+        else if (KeyBindings.GetKeyDown(BindableAction.Slot5))
         {
             EquipWeapon(WeaponType.Panzerfaust);
+        }
+        else if (KeyBindings.GetKeyDown(BindableAction.Slot6))
+        {
+            EquipWeapon(WeaponType.Hands);
+        }
+        else if (KeyBindings.GetKeyDown(BindableAction.Slot7))
+        {
+            EquipWeapon(WeaponType.Knife);
         }
 
         float scroll = Input.mouseScrollDelta.y;
@@ -168,15 +193,18 @@ public class WeaponController : MonoBehaviour
             CycleWeapon(-1);
         }
 
-        if (Input.GetKeyDown(KeyCode.R) && !isReloading)
+        if (KeyBindings.GetKeyDown(BindableAction.Reload) &&
+            !isReloading &&
+            CurrentWeapon != null &&
+            CurrentWeapon.behavior != WeaponBehavior.Melee)
         {
             StartCoroutine(ReloadWeapon());
         }
 
         bool firing = CurrentWeapon != null &&
                       (CurrentWeapon.firingMode == WeaponFiringMode.Automatic
-                          ? Input.GetMouseButton(0)
-                          : Input.GetMouseButtonDown(0));
+                          ? KeyBindings.GetKey(BindableAction.Fire)
+                          : KeyBindings.GetKeyDown(BindableAction.Fire));
         if (firing && !isReloading && Time.time >= nextShotTime)
         {
             Fire();
@@ -191,6 +219,11 @@ public class WeaponController : MonoBehaviour
         {
             WeaponDefinition ownedWeapon = weapons[index];
             EquipWeapon(type);
+            if (ownedWeapon.behavior == WeaponBehavior.Melee)
+            {
+                return;
+            }
+
             AmmoState ownedAmmo = ammoByWeapon[type];
             ownedAmmo.reserve = Mathf.Min(
                 ownedWeapon.reserveAmmo,
@@ -216,6 +249,79 @@ public class WeaponController : MonoBehaviour
             reserve = newWeapon.reserveAmmo
         };
         EquipWeapon(type);
+    }
+
+    public WeaponInventorySaveData CaptureSaveData()
+    {
+        SaveCurrentAmmo();
+        WeaponInventorySaveData saveData = new WeaponInventorySaveData();
+        if (CurrentWeapon != null)
+        {
+            saveData.equippedWeapon = CurrentWeapon.type;
+        }
+
+        foreach (WeaponDefinition weapon in weapons)
+        {
+            if (ammoByWeapon.TryGetValue(weapon.type, out AmmoState ammo))
+            {
+                saveData.weapons.Add(new WeaponAmmoSaveData
+                {
+                    type = weapon.type,
+                    magazineAmmo = ammo.magazine,
+                    reserveAmmo = ammo.reserve
+                });
+            }
+        }
+
+        return saveData;
+    }
+
+    public void RestoreSaveData(WeaponInventorySaveData saveData)
+    {
+        if (saveData == null || saveData.weapons == null)
+        {
+            Debug.LogError("Cannot restore weapon inventory because save data is missing.", this);
+            return;
+        }
+
+        weapons.Clear();
+        ammoByWeapon.Clear();
+        hasEquippedWeapon = false;
+        foreach (WeaponAmmoSaveData savedWeapon in saveData.weapons)
+        {
+            if (savedWeapon == null)
+            {
+                continue;
+            }
+
+            WeaponDefinition definition = WeaponCatalog.Get(savedWeapon.type);
+            if (definition == null)
+            {
+                continue;
+            }
+
+            weapons.Add(definition);
+            ammoByWeapon[definition.type] = new AmmoState
+            {
+                magazine = Mathf.Clamp(savedWeapon.magazineAmmo, 0, definition.magazineSize),
+                reserve = Mathf.Clamp(savedWeapon.reserveAmmo, 0, definition.reserveAmmo)
+            };
+        }
+
+        if (weapons.Count == 0)
+        {
+            Debug.LogWarning("Save contained no recognized weapons; the default loadout was restored.", this);
+            BuildDefaultWeapons();
+            EnsureFirePoint();
+            EquipStartingWeapon();
+            return;
+        }
+
+        EquipWeapon(saveData.equippedWeapon);
+        if (!hasEquippedWeapon)
+        {
+            EquipWeapon(weapons[0].type);
+        }
     }
 
     public void EquipWeapon(WeaponType type)
@@ -265,7 +371,24 @@ public class WeaponController : MonoBehaviour
         }
         else
         {
-            weapons.AddRange(WeaponCatalog.GetAll());
+            if (startingWeapons.Count > 0)
+            {
+                foreach (WeaponType type in startingWeapons)
+                {
+                    WeaponDefinition weapon = WeaponCatalog.Get(type);
+                    if (weapon != null)
+                    {
+                        weapons.Add(weapon);
+                    }
+                }
+            }
+
+            if (weapons.Count == 0)
+            {
+                weapons.Add(WeaponCatalog.Get(WeaponType.Hands));
+                weapons.Add(WeaponCatalog.Get(WeaponType.Knife));
+                weapons.RemoveAll(weapon => weapon == null);
+            }
         }
 
         foreach (WeaponDefinition weapon in weapons)
@@ -319,13 +442,7 @@ public class WeaponController : MonoBehaviour
     {
         if (playerCamera == null)
         {
-            playerCamera = GetComponentInChildren<Camera>();
-            if (playerCamera == null)
-            {
-                return;
-            }
-
-            defaultCameraFieldOfView = playerCamera.fieldOfView;
+            return;
         }
 
         float zoom = CurrentWeapon != null ? CurrentWeapon.aimZoom : mosinAimZoom;
@@ -340,14 +457,10 @@ public class WeaponController : MonoBehaviour
 
     private void Fire()
     {
-        if (CurrentWeapon == null || currentAmmo <= 0)
+        if (CurrentWeapon == null ||
+            (CurrentWeapon.behavior != WeaponBehavior.Melee && currentAmmo <= 0))
         {
             return;
-        }
-
-        if (playerCamera == null)
-        {
-            playerCamera = GetComponentInChildren<Camera>();
         }
 
         Vector3 origin = isAIControlled
@@ -370,7 +483,12 @@ public class WeaponController : MonoBehaviour
         direction += UnityEngine.Random.insideUnitSphere * CurrentWeapon.spread;
         direction.Normalize();
 
-        if (CurrentWeapon.behavior != WeaponBehavior.Hitscan)
+        bool usesAmmo = CurrentWeapon.behavior != WeaponBehavior.Melee;
+        if (CurrentWeapon.behavior == WeaponBehavior.Melee)
+        {
+            FireMelee(origin, direction);
+        }
+        else if (CurrentWeapon.behavior != WeaponBehavior.Hitscan)
         {
             if (CurrentWeapon.behavior == WeaponBehavior.Grenade)
             {
@@ -384,46 +502,97 @@ public class WeaponController : MonoBehaviour
             FireHitscan(origin, direction);
         }
 
-        currentAmmo--;
-        SaveCurrentAmmo();
+        if (usesAmmo)
+        {
+            currentAmmo--;
+            SaveCurrentAmmo();
+        }
+
         nextShotTime = Time.time + CurrentWeapon.fireRate;
         OnWeaponFired?.Invoke(CurrentWeapon);
 
-        if (currentAmmo <= 0)
+        if (usesAmmo && currentAmmo <= 0)
         {
             StartCoroutine(ReloadWeapon());
         }
     }
 
-    private void FireHitscan(Vector3 origin, Vector3 direction)
+    private void FireMelee(Vector3 origin, Vector3 direction)
     {
-        Ray ray = new Ray(origin, direction);
-        RaycastHit[] hits = Physics.RaycastAll(ray, CurrentWeapon.range, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Collide);
-        System.Array.Sort(hits, (first, second) => first.distance.CompareTo(second.distance));
-        Health shooterHealth = GetComponentInParent<Health>();
-        bool hitSomething = false;
-        foreach (RaycastHit hit in hits)
+        int hitCount = Physics.RaycastNonAlloc(
+            origin,
+            direction,
+            hitBuffer,
+            CurrentWeapon.range,
+            Physics.DefaultRaycastLayers,
+            QueryTriggerInteraction.Ignore);
+        Health ownerHealth = GetComponentInParent<Health>();
+        int closestHitIndex = -1;
+        float closestDistance = float.PositiveInfinity;
+        for (int i = 0; i < hitCount; i++)
         {
-            CharacterController hitController = hit.collider as CharacterController;
-            EnemyRagdoll hitRagdoll = hitController != null ? hitController.GetComponent<EnemyRagdoll>() : null;
-            if ((hitRagdoll != null && hitRagdoll.HasHumanoidHitboxes) ||
-                (shooterHealth != null && hit.collider.GetComponentInParent<Health>() == shooterHealth))
+            RaycastHit hit = hitBuffer[i];
+            Health targetHealth = hit.collider.GetComponentInParent<Health>();
+            if (targetHealth == ownerHealth || hit.distance >= closestDistance)
             {
                 continue;
             }
 
-            hitSomething = true;
-            Debug.DrawLine(origin, hit.point, Color.red, 0.15f);
-            Health targetHealth = hit.collider.GetComponentInParent<Health>();
+            closestDistance = hit.distance;
+            closestHitIndex = i;
+        }
+
+        if (closestHitIndex >= 0)
+        {
+            RaycastHit closestHit = hitBuffer[closestHitIndex];
+            Health targetHealth = closestHit.collider.GetComponentInParent<Health>();
+            if (targetHealth != null)
+            {
+                targetHealth.TakeDamage(CurrentWeapon.damage);
+                Debug.DrawLine(origin, closestHit.point, Color.red, 0.15f);
+            }
+        }
+    }
+
+    private void FireHitscan(Vector3 origin, Vector3 direction)
+    {
+        int hitCount = Physics.RaycastNonAlloc(
+            origin,
+            direction,
+            hitBuffer,
+            CurrentWeapon.range,
+            Physics.DefaultRaycastLayers,
+            QueryTriggerInteraction.Collide);
+        Health shooterHealth = GetComponentInParent<Health>();
+        int closestHitIndex = -1;
+        float closestDistance = float.PositiveInfinity;
+        for (int i = 0; i < hitCount; i++)
+        {
+            RaycastHit hit = hitBuffer[i];
+            CharacterController hitController = hit.collider as CharacterController;
+            EnemyRagdoll hitRagdoll = hitController != null ? hitController.GetComponent<EnemyRagdoll>() : null;
+            if ((hitRagdoll != null && hitRagdoll.HasHumanoidHitboxes) ||
+                (shooterHealth != null && hit.collider.GetComponentInParent<Health>() == shooterHealth) ||
+                hit.distance >= closestDistance)
+            {
+                continue;
+            }
+
+            closestDistance = hit.distance;
+            closestHitIndex = i;
+        }
+
+        if (closestHitIndex >= 0)
+        {
+            RaycastHit closestHit = hitBuffer[closestHitIndex];
+            Debug.DrawLine(origin, closestHit.point, Color.red, 0.15f);
+            Health targetHealth = closestHit.collider.GetComponentInParent<Health>();
             if (targetHealth != null)
             {
                 targetHealth.TakeDamage(CurrentWeapon.damage);
             }
-
-            break;
         }
-
-        if (!hitSomething)
+        else
         {
             Debug.DrawRay(origin, direction * CurrentWeapon.range, Color.green, 0.15f);
         }

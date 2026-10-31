@@ -36,6 +36,7 @@ public class PlayerController : MonoBehaviour
     public float MaxStamina => maxStamina;
     public float StaminaNormalized => maxStamina > 0f ? Mathf.Clamp01(currentStamina / maxStamina) : 0f;
     public float CurrentHorizontalSpeed => currentHorizontalSpeed;
+    public float CameraPitch => verticalRotation;
     public bool IsSprinting { get; private set; }
     public bool IsCrouching => isCrouching;
 
@@ -102,6 +103,16 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    public void RestoreCameraPitch(float pitch)
+    {
+        playerCamera = GetComponentInChildren<Camera>(true);
+        verticalRotation = Mathf.Clamp(pitch, -80f, 80f);
+        if (playerCamera != null)
+        {
+            playerCamera.transform.localRotation = Quaternion.Euler(verticalRotation, 0f, 0f);
+        }
+    }
+
     private void Update()
     {
         if (GameContext.Instance != null && GameContext.Instance.IsPaused)
@@ -138,7 +149,7 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
-        bool crouchPressed = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+        bool crouchPressed = KeyBindings.GetKey(BindableAction.Crouch);
         float targetHeight = crouchPressed ? crouchingHeight : standingHeight;
 
         if (Mathf.Abs(controller.height - targetHeight) > 0.01f &&
@@ -155,7 +166,7 @@ public class PlayerController : MonoBehaviour
             playerCamera.transform.localPosition = Vector3.Lerp(playerCamera.transform.localPosition, new Vector3(0f, targetCameraHeight, 0f), Time.deltaTime * 10f);
         }
 
-        Vector3 input = new Vector3(Input.GetAxisRaw("Horizontal"), 0f, Input.GetAxisRaw("Vertical"));
+        Vector3 input = new Vector3(KeyBindings.Horizontal, 0f, KeyBindings.Vertical);
         if (input.sqrMagnitude > 1f)
         {
             input.Normalize();
@@ -164,7 +175,7 @@ public class PlayerController : MonoBehaviour
         bool hasMovementInput = input.sqrMagnitude > 0.01f;
         bool sprintRequested = !isCrouching &&
                                hasMovementInput &&
-                               Input.GetKey(KeyCode.LeftShift) &&
+                               KeyBindings.GetKey(BindableAction.Sprint) &&
                                !isExhausted;
         UpdateStamina(sprintRequested);
         IsSprinting = sprintRequested && currentStamina > 0f;
@@ -198,7 +209,7 @@ public class PlayerController : MonoBehaviour
             velocity.y = -2f;
         }
 
-        if (Input.GetButtonDown("Jump") && controller.isGrounded)
+        if (KeyBindings.GetKeyDown(BindableAction.Jump) && controller.isGrounded)
         {
             velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
         }
