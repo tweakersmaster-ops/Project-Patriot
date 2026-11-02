@@ -369,6 +369,7 @@ GameObject:
   - component: {fileID: 6355959114785293771}
   - component: {fileID: 1676625870899438565}
   - component: {fileID: 5747164043999760977}
+  - component: {fileID: 5365367179661837721}
   m_Layer: 0
   m_Name: Orlov_npc(Clone)
   m_TagString: Untagged
@@ -506,6 +507,33 @@ MonoBehaviour:
   jointSpring: 12
   jointDamper: 2
   droppedWeaponType: 1
+  corpseLifetime: 12
+--- !u!114 &5365367179661837721
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1801620639654960344}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 47720d364161efd428f5e23ed636ea26, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  handIkWeight: 1
+  elbowHintWeight: 0.45
+  foregripPosition: 0.55
+  footIkWeight: 0.75
+  footRotationWeight: 0.5
+  footRayStart: 0.6
+  footRayLength: 1.6
+  ankleOffset: 0.06
+  plantRange: 0.15
+  maxLift: 0.12
+  maxDrop: 0.4
+  groundMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
 --- !u!1 &1964117898479024334
 GameObject:
   m_ObjectHideFlags: 0
@@ -1231,6 +1259,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6294239829723046694}
   - component: {fileID: 5192435184665334846}
+  - component: {fileID: 1708928382329259358}
   m_Layer: 0
   m_Name: Orlov
   m_TagString: Untagged
@@ -1276,6 +1305,32 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &1708928382329259358
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4604165131410973721}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 47720d364161efd428f5e23ed636ea26, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  handIkWeight: 1
+  elbowHintWeight: 0.45
+  foregripPosition: 0.55
+  footIkWeight: 0.75
+  footRotationWeight: 0.5
+  footRayStart: 0.6
+  footRayLength: 1.6
+  ankleOffset: 0.06
+  plantRange: 0.15
+  maxLift: 0.12
+  maxDrop: 0.4
+  groundMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
 --- !u!1 &4673683390136716740
 GameObject:
   m_ObjectHideFlags: 0

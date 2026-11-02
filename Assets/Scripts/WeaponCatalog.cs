@@ -45,7 +45,7 @@ public static class WeaponCatalog
         Create(WeaponType.RGD33, WeaponFaction.Soviet, WeaponCategory.Grenade, WeaponFiringMode.Thrown, WeaponBehavior.Grenade, "RGD-33", 95f, 34f, 1.2f, 1, 3, 1.2f, 0.025f, false, 13f, 6f, 0.3f),
         Create(WeaponType.RPG43, WeaponFaction.Soviet, WeaponCategory.Grenade, WeaponFiringMode.Thrown, WeaponBehavior.Grenade, "RPG-43", 160f, 24f, 1.35f, 1, 2, 1.3f, 0.025f, false, 15f, 4.5f, 0.24f),
         Create(WeaponType.Hands, WeaponFaction.Soviet, WeaponCategory.Melee, WeaponFiringMode.SemiAutomatic, WeaponBehavior.Melee, "Hands", 12f, 1.6f, 0.45f, 0, 0, 0f, 0f),
-        Create(WeaponType.Knife, WeaponFaction.Soviet, WeaponCategory.Melee, WeaponFiringMode.SemiAutomatic, WeaponBehavior.Melee, "Knife", 35f, 2f, 0.65f, 0, 0, 0f, 0f)
+        Create(WeaponType.Knife, WeaponFaction.Soviet, WeaponCategory.Melee, WeaponFiringMode.SemiAutomatic, WeaponBehavior.Melee, "Knife", 45f, 2f, 0.65f, 0, 0, 0f, 0f)
     };
 
     public static WeaponDefinition[] GetAll()

@@ -29,6 +29,7 @@ public sealed class CharacterAnimatorDriver : MonoBehaviour
     private int actionLayerIndex = -1;
     private int emptyActionStateHash;
     private bool actionLayerActive;
+    private bool isDead;
 
     public static void AttachIfPresent(GameObject characterRoot)
     {
@@ -129,10 +130,17 @@ public sealed class CharacterAnimatorDriver : MonoBehaviour
             return;
         }
 
+        // После смерти анимации смерти управляет только EnemyRagdoll:
+        // драйвер не должен перетирать параметры локомоции и слои.
+        if (isDead)
+        {
+            return;
+        }
+
         Vector3 worldVelocity = GetWorldVelocity();
         Vector3 localVelocity = transform.InverseTransformDirection(worldVelocity);
         localVelocity.y = 0f;
-        
+
         float horizontalSpeed = localVelocity.magnitude;
         float referenceSpeed = GetReferenceSpeed();
         Vector2 blendVelocity = Vector2.ClampMagnitude(
@@ -142,11 +150,15 @@ public sealed class CharacterAnimatorDriver : MonoBehaviour
         characterAnimator.SetFloat(VelocityXId, blendVelocity.x, 0.1f, Time.deltaTime);
         characterAnimator.SetFloat(VelocityYId, blendVelocity.y, 0.1f, Time.deltaTime);
         characterAnimator.SetFloat(MoveAmountId, Mathf.Clamp01(horizontalSpeed / referenceSpeed), 0.1f, Time.deltaTime);
-        
+
         characterAnimator.SetBool(IsCrouchingId, playerController != null && playerController.IsCrouching);
         characterAnimator.SetBool(IsAimingId, CombatSettings.AimingEnabled && weaponController != null && weaponController.IsAiming);
-        characterAnimator.SetBool(IsGroundedId, characterController == null || characterController.isGrounded);
-        characterAnimator.SetFloat(VerticalSpeedId, characterController != null ? characterController.velocity.y : 0f);
+
+        // На агенте CharacterController выключен и isGrounded всегда false —
+        // считаем персонажа на земле, пока агент стоит на NavMesh.
+        bool onNavMesh = navigationAgent != null && navigationAgent.isActiveAndEnabled && navigationAgent.isOnNavMesh;
+        characterAnimator.SetBool(IsGroundedId, onNavMesh || characterController == null || characterController.isGrounded);
+        characterAnimator.SetFloat(VerticalSpeedId, characterController != null && characterController.enabled ? characterController.velocity.y : 0f);
 
         if (aimLayerIndex >= 0)
         {
@@ -167,6 +179,12 @@ public sealed class CharacterAnimatorDriver : MonoBehaviour
 
     private Vector3 GetWorldVelocity()
     {
+        // Агент может появиться уже после Awake (освобождённые пленные).
+        if (navigationAgent == null)
+        {
+            navigationAgent = GetComponent<NavMeshAgent>();
+        }
+
         // Если есть NavMeshAgent, берем скорость с него (упрощено для стабильности)
         if (navigationAgent != null && navigationAgent.isActiveAndEnabled && navigationAgent.isOnNavMesh)
         {
@@ -239,10 +257,28 @@ public sealed class CharacterAnimatorDriver : MonoBehaviour
 
     private void HandleDied(Health deadHealth)
     {
-        if (characterAnimator != null)
+        isDead = true;
+
+        if (characterAnimator == null)
         {
-            characterAnimator.SetTrigger(DieId);
+            return;
         }
+
+        if (actionLayerIndex >= 0)
+        {
+            characterAnimator.SetLayerWeight(actionLayerIndex, 0f);
+            actionLayerActive = false;
+        }
+
+        if (aimLayerIndex >= 0)
+        {
+            characterAnimator.SetLayerWeight(aimLayerIndex, 0f);
+        }
+
+        // Смерть отыгрывает аниматор (в т.ч. на низкой графике).
+        characterAnimator.enabled = true;
+        characterAnimator.ResetTrigger(DieId);
+        characterAnimator.SetTrigger(DieId);
     }
 
     private void TriggerAction(int triggerId)

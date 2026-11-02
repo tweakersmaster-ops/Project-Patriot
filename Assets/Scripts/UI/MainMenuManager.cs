@@ -42,6 +42,103 @@ public class MainMenuManager : MonoBehaviour
 
         SettingsMenu.ApplySavedSettings();
         ShowMain();
+
+        // «Продолжить» появляется только если есть сохранение.
+        SetupContinueButton();
+    }
+
+    // Кнопка «Продолжить» между «Начать игру» и «Настройки»: остальные
+    // кнопки сдвигаются вниз на один шаг. Без сохранения меню не меняется.
+    private void SetupContinueButton()
+    {
+        if (mainMenuPanel == null || !SaveSystem.HasSave)
+        {
+            return;
+        }
+
+        Transform startButton = mainMenuPanel.transform.Find("Button_Start");
+        if (startButton == null)
+        {
+            return;
+        }
+
+        RectTransform startRect = startButton.GetComponent<RectTransform>();
+        if (startRect == null)
+        {
+            return;
+        }
+
+        // Шаг берём из расстояния до соседней кнопки (по умолчанию 130 px).
+        float spacing = 130f;
+        Transform settingsButton = mainMenuPanel.transform.Find("Button_Settings");
+        if (settingsButton != null && settingsButton.GetComponent<RectTransform>() != null)
+        {
+            spacing = Mathf.Abs(startRect.anchoredPosition.y -
+                                settingsButton.GetComponent<RectTransform>().anchoredPosition.y);
+        }
+
+        // Сдвигаем все кнопки ниже «Начать игру» на один шаг вниз.
+        UnityEngine.UI.Button[] buttons = mainMenuPanel.GetComponentsInChildren<UnityEngine.UI.Button>(true);
+        for (int i = 0; i < buttons.Length; i++)
+        {
+            if (buttons[i].transform.parent != mainMenuPanel.transform)
+            {
+                continue;
+            }
+
+            RectTransform rect = buttons[i].GetComponent<RectTransform>();
+            if (rect != null && rect.anchoredPosition.y < startRect.anchoredPosition.y - 1f)
+            {
+                rect.anchoredPosition -= new Vector2(0f, spacing);
+            }
+        }
+
+        GameObject continueObject = Instantiate(startButton.gameObject, startButton.parent);
+        continueObject.name = "Button_Continue";
+        continueObject.transform.SetSiblingIndex(startButton.GetSiblingIndex() + 1);
+
+        RectTransform continueRect = continueObject.GetComponent<RectTransform>();
+        continueRect.anchoredPosition = startRect.anchoredPosition + new Vector2(0f, -spacing);
+
+        UnityEngine.UI.Button continueButton = continueObject.GetComponent<UnityEngine.UI.Button>();
+        if (continueButton != null)
+        {
+            continueButton.onClick = new UnityEngine.UI.Button.ButtonClickedEvent();
+            continueButton.onClick.AddListener(LoadContinue);
+        }
+
+        TMPro.TMP_Text label = continueObject.GetComponentInChildren<TMPro.TMP_Text>(true);
+        if (label != null)
+        {
+            label.text = "Продолжить";
+        }
+    }
+
+    public void LoadContinue()
+    {
+        if (!SaveSystem.HasSave)
+        {
+            StartGame();
+            return;
+        }
+
+        if (GameContext.Instance != null)
+        {
+            GameContext.Instance.PrepareForGameplayScene();
+        }
+
+        if (legacyMenu != null)
+        {
+            legacyMenu.enabled = true;
+        }
+
+        if (backgroundVideo != null)
+        {
+            backgroundVideo.Stop();
+        }
+
+        // SaveSystem сам загрузит сцену и восстановит состояние.
+        SaveSystem.LoadGame();
     }
 
     private void StartBackgroundVideo()
@@ -83,7 +180,13 @@ public class MainMenuManager : MonoBehaviour
     }
 
     // --- кнопки ---
-    public void StartGame() { Load(firstScene); }
+    public void StartGame()
+    {
+        // Новая игра: старое сохранение удаляем, новое создастся после загрузки сцены.
+        SaveSystem.DeleteSave();
+        SaveSystem.PrepareNewGame();
+        Load(firstScene);
+    }
     public void LoadPolock() { Load(firstScene); }
     public void LoadBridge() { Load(bridgeScene); }
     public void LoadDebugMap() { Load(debugScene); }

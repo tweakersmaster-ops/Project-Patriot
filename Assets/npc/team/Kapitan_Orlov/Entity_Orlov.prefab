@@ -1177,6 +1177,7 @@ GameObject:
   - component: {fileID: 5567664700117879019}
   - component: {fileID: 557191907086790712}
   - component: {fileID: 226012263296864556}
+  - component: {fileID: 696308492987246129}
   m_Layer: 0
   m_Name: Entity_Orlov
   m_TagString: Untagged
@@ -1218,14 +1219,7 @@ Animator:
   m_ApplyRootMotion: 1
   m_LinearVelocityBlending: 0
   m_StabilizeFeet: 0
-  m_WarningMessage: "\nBinding warning: Some generic clip(s) animate transforms that
-    are already bound by a Humanoid avatar. These transforms can only be changed
-    by Humanoid clips.\n\tTransform 'mixamorig:Hips'\n\tTransform 'mixamorig:LeftFoot'\n\tTransform
-    'mixamorig:LeftHandThumb2'\n\tTransform 'mixamorig:LeftHandIndex1'\n\tTransform
-    'mixamorig:LeftHandPinky2'\n\tTransform 'mixamorig:RightHandRing2'\n\tTransform
-    'mixamorig:Spine1'\n\tTransform 'mixamorig:LeftToeBase'\n\tTransform 'mixamorig:LeftHandThumb3'\n\tTransform
-    'mixamorig:RightArm'\n\tand more ...\n\tFrom animation clip 'walking_anim'\n\tFrom
-    animation clip 'walk forward_anim'"
+  m_WarningMessage: 
   m_HasTransformHierarchy: 1
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
@@ -1280,6 +1274,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   weapons: []
   currentWeaponIndex: 0
+  startingWeapons: 
+  startingWeapon: 40
   firePoint: {fileID: 0}
   playerCamera: {fileID: 0}
   mosinAimZoom: 2.7
@@ -1316,6 +1312,32 @@ MonoBehaviour:
   maxHealth: 100
   destroyOnDeath: 1
   currentHealth: 0
+--- !u!114 &696308492987246129
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5536032231123599980}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 47720d364161efd428f5e23ed636ea26, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  handIkWeight: 1
+  elbowHintWeight: 0.45
+  foregripPosition: 0.55
+  footIkWeight: 0.75
+  footRotationWeight: 0.5
+  footRayStart: 0.6
+  footRayLength: 1.6
+  ankleOffset: 0.06
+  plantRange: 0.15
+  maxLift: 0.12
+  maxDrop: 0.4
+  groundMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
 --- !u!1 &5655651228886586952
 GameObject:
   m_ObjectHideFlags: 0

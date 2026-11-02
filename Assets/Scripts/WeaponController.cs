@@ -463,8 +463,10 @@ public class WeaponController : MonoBehaviour
             return;
         }
 
+        // У ботов корень стоит на 1.8 м выше земли (модель смещена вниз),
+        // поэтому стреляем от груди — на -0.6 от корня, как охрана.
         Vector3 origin = isAIControlled
-            ? transform.position + Vector3.up * 1.25f
+            ? transform.position + Vector3.up * -0.6f
             : playerCamera != null
                 ? playerCamera.transform.position
                 : transform.position + transform.forward;
@@ -533,7 +535,9 @@ public class WeaponController : MonoBehaviour
         {
             RaycastHit hit = hitBuffer[i];
             Health targetHealth = hit.collider.GetComponentInParent<Health>();
-            if (targetHealth == ownerHealth || hit.distance >= closestDistance)
+            if (targetHealth == ownerHealth ||
+                (targetHealth != null && ownerHealth != null && targetHealth.CompareTag(ownerHealth.tag)) ||
+                hit.distance >= closestDistance)
             {
                 continue;
             }
@@ -571,8 +575,10 @@ public class WeaponController : MonoBehaviour
             RaycastHit hit = hitBuffer[i];
             CharacterController hitController = hit.collider as CharacterController;
             EnemyRagdoll hitRagdoll = hitController != null ? hitController.GetComponent<EnemyRagdoll>() : null;
+            Health candidateHealth = hit.collider.GetComponentInParent<Health>();
             if ((hitRagdoll != null && hitRagdoll.HasHumanoidHitboxes) ||
-                (shooterHealth != null && hit.collider.GetComponentInParent<Health>() == shooterHealth) ||
+                (shooterHealth != null && candidateHealth == shooterHealth) ||
+                (candidateHealth != null && shooterHealth != null && candidateHealth.CompareTag(shooterHealth.tag)) ||
                 hit.distance >= closestDistance)
             {
                 continue;

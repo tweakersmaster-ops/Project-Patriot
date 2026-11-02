@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 
 [RequireComponent(typeof(CharacterController))]
 public class TeamFollowPlayer : MonoBehaviour
@@ -12,8 +13,13 @@ public class TeamFollowPlayer : MonoBehaviour
     public float rotationSpeed = 8f;
     public float targetSearchRadius = 15f;
     public float targetSearchInterval = 0.35f;
+    public float gravity = -9.81f;
+
+    private float verticalVelocity;
 
     private CharacterController controller;
+    private NavMeshAgent agent;
+    private bool useAgent;
     private PlayerController player;
     private AllyCombatAI allyCombatAI;
     private EnemyAI teamAI;
@@ -36,6 +42,23 @@ public class TeamFollowPlayer : MonoBehaviour
     private void Start()
     {
         controller = GetComponent<CharacterController>();
+        agent = GetComponent<NavMeshAgent>();
+
+        // Союзник идёт по запечённому NavMesh, если под ним есть навигация.
+        // AllySoldierAI уже поднял агента; здесь только проверяем состояние.
+        useAgent = agent != null && agent.enabled && agent.isOnNavMesh;
+        if (useAgent)
+        {
+            agent.updateRotation = false;
+            agent.speed = followSpeed;
+            agent.stoppingDistance = 0.4f;
+            agent.autoBraking = true;
+            if (controller != null)
+            {
+                controller.enabled = false;
+            }
+        }
+
         CharacterAnimatorDriver.AttachIfPresent(gameObject);
         allyCombatAI = GetComponent<AllyCombatAI>();
         teamAI = GetComponent<EnemyAI>();
@@ -54,13 +77,17 @@ public class TeamFollowPlayer : MonoBehaviour
 
     private void Update()
     {
-        if (controller == null || !controller.enabled)
+        if (!useAgent && (controller == null || !controller.enabled))
         {
             return;
         }
 
         if (GameContext.Instance != null && GameContext.Instance.IsPaused)
         {
+            if (useAgent)
+            {
+                NavMeshCharacterUtility.Stop(agent);
+            }
             return;
         }
 
@@ -76,6 +103,11 @@ public class TeamFollowPlayer : MonoBehaviour
 
         if (allyCombatAI != null && allyCombatAI.CurrentTarget != null)
         {
+            // В бою союзник стоит и стреляет, поворотом занимается AllyCombatAI.
+            if (useAgent)
+            {
+                NavMeshCharacterUtility.Stop(agent);
+            }
             return;
         }
 
@@ -96,12 +128,22 @@ public class TeamFollowPlayer : MonoBehaviour
             teamAI.target = currentEnemy != null ? currentEnemy.transform : null;
             if (currentEnemy != null)
             {
+                if (useAgent)
+                {
+                    NavMeshCharacterUtility.Stop(agent);
+                }
                 return;
             }
         }
 
         GameContext context = GameContext.Instance;
         player = context != null ? context.Player : null;
+
+        if (useAgent)
+        {
+            FollowPlayerOnNavMesh();
+            return;
+        }
 
         Vector3 horizontalMovement = Vector3.zero;
         if (player != null)
@@ -118,7 +160,65 @@ public class TeamFollowPlayer : MonoBehaviour
             }
         }
 
-        controller.Move(horizontalMovement * Time.deltaTime);
+        // Гравитация нужна, чтобы CharacterController реально касался земли
+        // (isGrounded) и аниматор не показывал падение.
+        if (controller.isGrounded && verticalVelocity < 0f)
+        {
+            verticalVelocity = -2f;
+        }
+        else
+        {
+            verticalVelocity += gravity * Time.deltaTime;
+        }
+
+        Vector3 movement = horizontalMovement * Time.deltaTime;
+        movement.y = verticalVelocity * Time.deltaTime;
+        controller.Move(movement);
+    }
+
+    // Движение по запечённому NavMesh: агент сам обходит стены и мебель.
+    private void FollowPlayerOnNavMesh()
+    {
+        if (player == null || agent == null || !agent.enabled || !agent.isOnNavMesh)
+        {
+            NavMeshCharacterUtility.Stop(agent);
+            return;
+        }
+
+        // Точка строя считается от корня игрока (он выше земли на 1.8 м),
+        // поэтому проецируем её на навигацию.
+        Vector3 targetPosition;
+        if (!NavMeshCharacterUtility.TryGetNavPoint(GetFormationPosition(), 3f, out targetPosition))
+        {
+            NavMeshCharacterUtility.Stop(agent);
+            return;
+        }
+
+        Vector3 offset = targetPosition - transform.position;
+        offset.y = 0f;
+
+        if (offset.magnitude <= 0.6f)
+        {
+            NavMeshCharacterUtility.Stop(agent);
+            return;
+        }
+
+        NavMeshCharacterUtility.Resume(agent);
+        agent.speed = followSpeed;
+        if ((agent.destination - targetPosition).sqrMagnitude > 0.36f)
+        {
+            agent.SetDestination(targetPosition);
+        }
+
+        Vector3 velocity = agent.desiredVelocity;
+        velocity.y = 0f;
+        if (velocity.sqrMagnitude > 0.04f)
+        {
+            transform.rotation = Quaternion.Slerp(
+                transform.rotation,
+                Quaternion.LookRotation(velocity.normalized),
+                Time.deltaTime * rotationSpeed);
+        }
     }
 
     private Vector3 GetFormationPosition()

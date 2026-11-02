@@ -19,7 +19,8 @@ public class EnemyAI : MonoBehaviour
 
     [Header("Настройки зрения и атаки")]
     public float moveSpeed = 2f;      // Скорость (для совместимости, синхронизируется с agent.speed)
-    public float detectionRange = 15f; // Радиус обнаружения игрока
+    public float detectionRange = 22f; // Радиус обнаружения игрока
+    public float viewAngle = 60f;      // Угол обзора (полный конус, градусы)
     public float attackRange = 10f;    // Дистанция, с которой начинает стрелять
     public float fireRate = 1.5f;      // Скорострельность
     public float damage = 10f;         // Урон
@@ -60,7 +61,27 @@ public class EnemyAI : MonoBehaviour
         // Настройки агента для плавного движения и поворотов
         agent.updateRotation = true; // Пусть агент сам поворачивает модель
         agent.updatePosition = true; // Пусть агент сам двигает модель
-        agent.stoppingDistance = attackRange; // Останавливается, когда доходит до дистанции атаки
+        agent.stoppingDistance = 0.6f; // В патруле доходим почти до самой точки
+
+        // Корень персонажа поднят над землёй (модель смещена вниз), поэтому
+        // без baseOffset агент утопил бы модель в землю при переходе на NavMesh.
+        Vector3 feet = transform.position - Vector3.up * NavMeshCharacterUtility.DefaultFootOffset;
+        NavMeshHit navHit;
+        if (!agent.isOnNavMesh && NavMesh.SamplePosition(feet, out navHit, 2f, NavMesh.AllAreas))
+        {
+            // Ставим корень ровно над точкой полигона с учётом baseOffset.
+            // Warp так делать нельзя: он затирает смещение и агент падает.
+            float navOffset = transform.position.y - navHit.position.y;
+            if (navOffset < 1f || navOffset > 2.6f)
+            {
+                navOffset = NavMeshCharacterUtility.DefaultFootOffset;
+            }
+
+            agent.enabled = false;
+            agent.baseOffset = navOffset;
+            transform.position = navHit.position + Vector3.up * navOffset;
+            agent.enabled = true;
+        }
 
         // Если игрок не назначен вручную, ищем его на сцене
         if (target == null)
@@ -82,14 +103,15 @@ public class EnemyAI : MonoBehaviour
 
         // Считаем дистанцию до игрока
         float distanceToPlayer = Vector3.Distance(transform.position, target.position);
+        bool playerVisible = distanceToPlayer <= detectionRange && IsInViewCone(target);
 
         // ЛОГИКА ПЕРЕКЛЮЧЕНИЯ СОСТОЯНИЙ (Машина состояний)
-        if (distanceToPlayer <= attackRange)
+        if (playerVisible && distanceToPlayer <= attackRange)
         {
             if (currentState != EnemyState.Attacking)
                 ChangeState(EnemyState.Attacking);
         }
-        else if (distanceToPlayer <= detectionRange)
+        else if (playerVisible)
         {
             if (currentState != EnemyState.Chasing)
                 ChangeState(EnemyState.Chasing);
@@ -115,50 +137,106 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
+    // Игрок должен попадать в конус обзора (viewAngle), иначе немец его не замечает.
+    private bool IsInViewCone(Transform candidate)
+    {
+        if (candidate == null)
+        {
+            return false;
+        }
+
+        Vector3 toTarget = candidate.position - transform.position;
+        toTarget.y = 0f;
+        if (toTarget.sqrMagnitude < 0.01f)
+        {
+            return true;
+        }
+
+        return Vector3.Angle(transform.forward, toTarget) <= viewAngle * 0.5f;
+    }
+
+    private bool HasNavigation()
+    {
+        return agent != null && agent.enabled && agent.isOnNavMesh;
+    }
+
     private void ChangeState(EnemyState newState)
     {
         currentState = newState;
 
         if (newState == EnemyState.Patrolling)
         {
-            agent.speed = moveSpeed; // Медленная скорость
-            agent.isStopped = false;
             waitTimer = 0f;
+
+            if (HasNavigation())
+            {
+                agent.speed = moveSpeed; // Медленная скорость
+                agent.stoppingDistance = 0.6f;
+                agent.isStopped = false;
+
+                if (waypoints.Length > 0)
+                {
+                    agent.SetDestination(waypoints[currentWaypointIndex].position);
+                }
+            }
         }
         else if (newState == EnemyState.Chasing)
         {
-            agent.speed = 5f; // Быстрая скорость
-            agent.isStopped = false;
+            if (HasNavigation())
+            {
+                agent.speed = 5f; // Быстрая скорость
+                agent.stoppingDistance = attackRange * 0.8f;
+                agent.isStopped = false;
+            }
         }
         else if (newState == EnemyState.Attacking)
         {
-            agent.isStopped = true; // Останавливаемся для стрельбы
+            if (HasNavigation())
+            {
+                agent.isStopped = true; // Останавливаемся для стрельбы
+            }
         }
     }
 
     private void HandlePatrol()
     {
-        if (waypoints.Length == 0) return;
-
-        // Если стоим на точке и ждем
-        if (waitTimer > 0)
+        if (waypoints.Length == 0 || !HasNavigation())
         {
-            waitTimer -= Time.deltaTime;
             return;
         }
 
-        // Если дошли до текущей точки
+        // Стоим на точке ровно waitTimeAtPoint секунд
+        if (waitTimer > 0f)
+        {
+            waitTimer -= Time.deltaTime;
+            if (waitTimer <= 0f)
+            {
+                agent.isStopped = false;
+                agent.SetDestination(waypoints[currentWaypointIndex].position);
+            }
+
+            return;
+        }
+
+        // Дошли до текущей точки — останавливаемся и ждём,
+        // следующую точку берём уже после ожидания.
         if (!agent.pathPending && agent.remainingDistance <= agent.stoppingDistance + 0.2f)
         {
-            waitTimer = waitTimeAtPoint; // Включаем таймер ожидания
-            currentWaypointIndex = (currentWaypointIndex + 1) % waypoints.Length; // Идем к следующей
-            agent.SetDestination(waypoints[currentWaypointIndex].position);
+            agent.isStopped = true;
+            waitTimer = waitTimeAtPoint;
+            currentWaypointIndex = (currentWaypointIndex + 1) % waypoints.Length;
         }
     }
 
     private void HandleChase()
     {
+        if (!HasNavigation())
+        {
+            return;
+        }
+
         // Постоянно обновляем цель
+        agent.isStopped = false;
         agent.SetDestination(target.position);
     }
 
@@ -209,7 +287,12 @@ public class EnemyAI : MonoBehaviour
         if (agent == null) agent = GetComponent<NavMeshAgent>();
         if (agent != null)
         {
-            agent.isStopped = true;
+            // Без запечённого NavMesh трогать isStopped нельзя — Unity ругается.
+            if (agent.enabled && agent.isOnNavMesh)
+            {
+                agent.isStopped = true;
+            }
+
             agent.enabled = false;
         }
     }

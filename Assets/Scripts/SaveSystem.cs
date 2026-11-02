@@ -23,6 +23,29 @@ public static class SaveSystem
     public static string SaveFilePath => Path.Combine(SaveDirectoryPath, SaveFileName);
     public static bool HasSave => File.Exists(SaveFilePath);
 
+    // Удаляет файл сохранения (кнопка «Начать игру» начинает всё заново).
+    public static void DeleteSave()
+    {
+        pendingSave = null;
+        deadEntities.Clear();
+
+        try
+        {
+            if (File.Exists(SaveFilePath))
+            {
+                File.Delete(SaveFilePath);
+            }
+        }
+        catch (IOException exception)
+        {
+            Debug.LogWarning("Could not delete save file '" + SaveFilePath + "': " + exception);
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            Debug.LogWarning("Access to save file was denied '" + SaveFilePath + "': " + exception);
+        }
+    }
+
     public static void PrepareNewGame()
     {
         pendingSave = null;

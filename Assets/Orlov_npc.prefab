@@ -1056,6 +1056,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5713062064826343249}
   - component: {fileID: 1848995349340226859}
+  - component: {fileID: 5454847972773477684}
   m_Layer: 0
   m_Name: Orlov
   m_TagString: Untagged
@@ -1101,6 +1102,32 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &5454847972773477684
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4900777317871879659}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 47720d364161efd428f5e23ed636ea26, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  handIkWeight: 1
+  elbowHintWeight: 0.45
+  foregripPosition: 0.55
+  footIkWeight: 0.75
+  footRotationWeight: 0.5
+  footRayStart: 0.6
+  footRayLength: 1.6
+  ankleOffset: 0.06
+  plantRange: 0.15
+  maxLift: 0.12
+  maxDrop: 0.4
+  groundMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
 --- !u!1 &5092454251330703823
 GameObject:
   m_ObjectHideFlags: 0

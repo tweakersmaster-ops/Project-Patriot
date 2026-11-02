@@ -19,7 +19,13 @@ public class WeaponView : MonoBehaviour
 
     private static readonly Vector3 WeaponRestPosition = new Vector3(0.52f, -0.34f, 0.88f);
     private static readonly Vector3 MosinAimPosition = new Vector3(0.06f, -0.17f, 0.58f);
+    private static readonly Vector3 KnifeRestPosition = new Vector3(0.34f, -0.36f, 0.86f);
+    private static readonly Vector3 HandsRestPosition = new Vector3(0f, -0.4f, 0.86f);
     private const float WeaponModelScale = 1.18f;
+    private const float MeleeSwingDuration = 0.34f;
+
+    private float meleeTimer;
+    private int punchSide;
 
     private void Start()
     {
@@ -55,7 +61,14 @@ public class WeaponView : MonoBehaviour
 
     private void Update()
     {
-        if (weaponRoot != null)
+        if (weaponRoot != null && weaponController != null && weaponController.IsAIControlled)
+        {
+            // Оружие ботов крепится к кости руки: локальные смещения
+            // «вид от первого лица» здесь не нужны.
+            weaponRoot.transform.localPosition = Vector3.zero;
+            weaponRoot.transform.localRotation = Quaternion.identity;
+        }
+        else if (weaponRoot != null)
         {
             float moveX = KeyBindings.Horizontal;
             float moveY = KeyBindings.Vertical;
@@ -69,17 +82,50 @@ public class WeaponView : MonoBehaviour
 
             float bobSide = Mathf.Sin(bobTimer) * Mathf.Lerp(0.012f, 0.02f, sprintBlend) * movementAmount;
             float bobUp = Mathf.Abs(Mathf.Cos(bobTimer)) * Mathf.Lerp(0.018f, 0.032f, sprintBlend) * movementAmount;
-            Vector3 basePosition = isAiming && weaponController.CurrentWeapon != null &&
-                                   weaponController.CurrentWeapon.canAim
-                ? MosinAimPosition
-                : WeaponRestPosition;
+            Vector3 basePosition = GetBasePosition();
             Vector3 targetPosition = basePosition + new Vector3(bobSide * (isAiming ? 0.2f : 1f), bobUp * (isAiming ? 0.2f : 1f), 0f);
+
+            // Анимация удара ножом / кулаками: короткий замах и выпад.
+            meleeTimer = Mathf.Max(0f, meleeTimer - Time.deltaTime);
+            float swing = meleeTimer > 0f
+                ? Mathf.Sin((1f - meleeTimer / MeleeSwingDuration) * Mathf.PI)
+                : 0f;
+            WeaponDefinition currentWeapon = weaponController.CurrentWeapon;
+            bool handsEquipped = currentWeapon != null && currentWeapon.type == WeaponType.Hands;
+            Vector3 swingOffset = Vector3.zero;
+            Vector3 swingEuler = Vector3.zero;
+            if (swing > 0.001f)
+            {
+                if (handsEquipped)
+                {
+                    float side = punchSide == 0 ? 1f : -1f;
+                    swingOffset = new Vector3(side * 0.16f * swing, 0.06f * swing, 0.26f * swing);
+                    swingEuler = new Vector3(-20f * swing, -side * 18f * swing, side * 8f * swing);
+                }
+                else
+                {
+                    swingOffset = new Vector3(-0.18f * swing, -0.08f * swing, 0.22f * swing);
+                    swingEuler = new Vector3(-35f * swing, 25f * swing, -70f * swing);
+                }
+            }
+
+            // Тряска при беге: мелкое дрожание оружия/рук в руках.
+            float shake = sprintBlend * movementAmount;
+            float shakeTime = Time.time * 22f;
+            Vector3 shakeOffset = new Vector3(
+                (Mathf.PerlinNoise(shakeTime, 0.3f) - 0.5f) * 0.05f * shake,
+                (Mathf.PerlinNoise(0.7f, shakeTime) - 0.5f) * 0.05f * shake,
+                (Mathf.PerlinNoise(shakeTime, shakeTime) - 0.5f) * 0.02f * shake);
+            float shakeRoll = (Mathf.PerlinNoise(shakeTime, 3.1f) - 0.5f) * 8f * shake;
+            float shakePitch = (Mathf.PerlinNoise(shakeTime, 7.7f) - 0.5f) * 5f * shake;
+
+            targetPosition += swingOffset + shakeOffset;
             float mouseX = weaponController.IsAIControlled ? 0f : Input.GetAxis("Mouse X");
             float mouseY = weaponController.IsAIControlled ? 0f : Input.GetAxis("Mouse Y");
             Quaternion targetRotation = Quaternion.Euler(
-                -recoilAmount * 7f - mouseY * 0.7f,
-                mouseX * 0.8f + sprintBlend * 1.5f,
-                -mouseX * 1.5f - bobSide * 80f - sprintBlend * 1.5f);
+                -recoilAmount * 7f - mouseY * 0.7f + swingEuler.x + shakePitch,
+                mouseX * 0.8f + sprintBlend * 1.5f + swingEuler.y,
+                -mouseX * 1.5f - bobSide * 80f - sprintBlend * 1.5f + swingEuler.z + shakeRoll);
 
             weaponRoot.transform.localPosition = Vector3.Lerp(weaponRoot.transform.localPosition, targetPosition, Time.deltaTime * 12f);
             weaponRoot.transform.localRotation = Quaternion.Slerp(weaponRoot.transform.localRotation, targetRotation, Time.deltaTime * 12f);
@@ -90,6 +136,23 @@ public class WeaponView : MonoBehaviour
             muzzleLight.enabled = flashTimer > 0f;
             flashTimer -= Time.deltaTime;
         }
+    }
+
+    // Точка покоя оружия: руки/нож держим по центру, огнестрел — справа.
+    private Vector3 GetBasePosition()
+    {
+        WeaponDefinition weapon = weaponController != null ? weaponController.CurrentWeapon : null;
+        if (weapon != null && weapon.category == WeaponCategory.Melee)
+        {
+            return weapon.type == WeaponType.Hands ? HandsRestPosition : KnifeRestPosition;
+        }
+
+        if (isAiming && weapon != null && weapon.canAim)
+        {
+            return MosinAimPosition;
+        }
+
+        return WeaponRestPosition;
     }
 
     private void HandleAimChanged(bool aiming)
@@ -373,13 +436,14 @@ public class WeaponView : MonoBehaviour
         Color skin = new Color(0.72f, 0.55f, 0.4f);
         if (type == WeaponType.Hands)
         {
-            CreatePart(PrimitiveType.Capsule, new Vector3(-0.19f, -0.2f, 0.24f),
-                new Vector3(0.12f, 0.38f, 0.12f), sleeve, Quaternion.Euler(90f, 0f, -12f));
-            CreatePart(PrimitiveType.Capsule, new Vector3(0.19f, -0.2f, 0.24f),
-                new Vector3(0.12f, 0.38f, 0.12f), sleeve, Quaternion.Euler(90f, 0f, 12f));
-            CreatePart(PrimitiveType.Sphere, new Vector3(-0.1f, -0.08f, 0.48f),
+            // Руки по краям экрана: левая слева, правая справа.
+            CreatePart(PrimitiveType.Capsule, new Vector3(-0.34f, -0.2f, 0.24f),
+                new Vector3(0.12f, 0.38f, 0.12f), sleeve, Quaternion.Euler(90f, 0f, -14f));
+            CreatePart(PrimitiveType.Capsule, new Vector3(0.34f, -0.2f, 0.24f),
+                new Vector3(0.12f, 0.38f, 0.12f), sleeve, Quaternion.Euler(90f, 0f, 14f));
+            CreatePart(PrimitiveType.Sphere, new Vector3(-0.26f, -0.08f, 0.48f),
                 new Vector3(0.15f, 0.12f, 0.16f), skin);
-            CreatePart(PrimitiveType.Sphere, new Vector3(0.1f, -0.08f, 0.48f),
+            CreatePart(PrimitiveType.Sphere, new Vector3(0.26f, -0.08f, 0.48f),
                 new Vector3(0.15f, 0.12f, 0.16f), skin);
             return;
         }
@@ -445,6 +509,14 @@ public class WeaponView : MonoBehaviour
 
     private void OnWeaponFired(WeaponDefinition weapon)
     {
+        if (weapon != null && weapon.category == WeaponCategory.Melee)
+        {
+            // Запускаем замах для ножа/кулаков, чередуя руки.
+            meleeTimer = MeleeSwingDuration;
+            punchSide = 1 - punchSide;
+            return;
+        }
+
         if (weapon == null || weapon.category == WeaponCategory.Grenade ||
             weapon.category == WeaponCategory.Melee ||
             muzzleLight == null || muzzleFlash == null)

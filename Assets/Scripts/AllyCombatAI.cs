@@ -13,6 +13,7 @@ public sealed class AllyCombatAI : MonoBehaviour
 
     private WeaponController weaponController;
     private Transform currentTarget;
+    private Transform weaponHand;
     private float nextSearchTime;
 
     public Transform CurrentTarget => currentTarget;
@@ -45,6 +46,14 @@ public sealed class AllyCombatAI : MonoBehaviour
         {
             weaponController.SetAICombatTarget(null);
             return;
+        }
+
+        if (currentTarget != null && !HasLineOfSight(currentTarget))
+        {
+            // За стеной цель не видна — отпускаем её, чтобы союзник шёл за
+            // игроком, а не стрелял в стену из коровника.
+            currentTarget = null;
+            nextSearchTime = Time.time + searchInterval;
         }
 
         if (currentTarget == null || IsInvalidTarget(currentTarget))
@@ -103,7 +112,9 @@ public sealed class AllyCombatAI : MonoBehaviour
             }
 
             float distanceSquared = (enemy.transform.position - transform.position).sqrMagnitude;
-            if (distanceSquared < nearestDistanceSquared)
+            // Берём только тех, кого реально видно: иначе союзник замирает
+            // внутри коровника, «целясь» в немца за стеной.
+            if (distanceSquared < nearestDistanceSquared && HasLineOfSight(enemy.transform))
             {
                 nearest = enemy.transform;
                 nearestDistanceSquared = distanceSquared;
@@ -111,6 +122,27 @@ public sealed class AllyCombatAI : MonoBehaviour
         }
 
         return nearest;
+    }
+
+    // Проверка прямой видимости: стены и прочая геометрия мешают стрельбе.
+    private bool HasLineOfSight(Transform target)
+    {
+        if (target == null)
+        {
+            return false;
+        }
+
+        Vector3 origin = transform.position + Vector3.up * -0.4f;
+        Vector3 aim = target.position + Vector3.up * -0.4f;
+        RaycastHit hit;
+        if (!Physics.Linecast(origin, aim, out hit, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
+        {
+            return true;
+        }
+
+        // Другой персонаж на линии стрельбе не мешает: WeaponController
+        // пропускает своих и бьёт дальнюю цель.
+        return hit.collider.GetComponentInParent<Health>() != null;
     }
 
     private bool IsInvalidTarget(Transform target)
@@ -122,8 +154,25 @@ public sealed class AllyCombatAI : MonoBehaviour
                (target.position - transform.position).sqrMagnitude > searchRadius * searchRadius;
     }
 
+    private void LateUpdate()
+    {
+        // Оружие держим в правой руке: позицию берём с кости кисти,
+        // поворот — вперёд персонажа (куда он целится).
+        if (weaponViewAnchor != null && weaponHand != null)
+        {
+            weaponViewAnchor.position = weaponHand.position;
+            weaponViewAnchor.rotation = transform.rotation;
+        }
+    }
+
     private void EnsureWeaponView()
     {
+        Animator animator = FindHumanoidAnimator();
+        if (animator != null)
+        {
+            weaponHand = animator.GetBoneTransform(HumanBodyBones.RightHand);
+        }
+
         if (weaponViewAnchor == null)
         {
             Transform existingAnchor = transform.Find("WeaponViewAnchor");
@@ -140,9 +189,31 @@ public sealed class AllyCombatAI : MonoBehaviour
             }
         }
 
+        if (weaponHand != null)
+        {
+            // Крепление к кисти: без IK-констрейнтов оружие «висит в воздухе».
+            weaponViewAnchor.SetParent(weaponHand, false);
+            weaponViewAnchor.localPosition = new Vector3(0.02f, -0.02f, 0.04f);
+            weaponViewAnchor.localRotation = Quaternion.identity;
+        }
+
         if (weaponViewAnchor.GetComponent<WeaponView>() == null)
         {
             weaponViewAnchor.gameObject.AddComponent<WeaponView>();
         }
+    }
+
+    private Animator FindHumanoidAnimator()
+    {
+        Animator[] animators = GetComponentsInChildren<Animator>(true);
+        for (int i = 0; i < animators.Length; i++)
+        {
+            if (animators[i].avatar != null && animators[i].avatar.isHuman)
+            {
+                return animators[i];
+            }
+        }
+
+        return null;
     }
 }
