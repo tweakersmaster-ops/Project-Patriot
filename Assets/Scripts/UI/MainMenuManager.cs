@@ -45,6 +45,37 @@ public class MainMenuManager : MonoBehaviour
 
         // «Продолжить» появляется только если есть сохранение.
         SetupContinueButton();
+        CreateVersionLabel();
+    }
+
+    // Подпись сборки в правом нижнем углу главного меню.
+    private void CreateVersionLabel()
+    {
+        // Собственный оверлей, чтобы подпись не зависела от того, какой Canvas
+        // найден в сцене и какая у него раскладка.
+        GameObject canvasObject = new GameObject("VersionLabelCanvas");
+        Canvas canvas = canvasObject.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = 50;
+        canvasObject.AddComponent<UnityEngine.UI.CanvasScaler>();
+
+        GameObject labelObject = new GameObject("VersionLabel");
+        labelObject.transform.SetParent(canvasObject.transform, false);
+
+        UnityEngine.UI.Text label = labelObject.AddComponent<UnityEngine.UI.Text>();
+        label.text = "alpha 0.1 designed by SGK";
+        label.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+        label.fontSize = 18;
+        label.alignment = TextAnchor.LowerRight;
+        label.color = new Color(1f, 1f, 1f, 0.85f);
+        label.raycastTarget = false;
+
+        RectTransform rect = label.rectTransform;
+        rect.anchorMin = new Vector2(1f, 0f);
+        rect.anchorMax = new Vector2(1f, 0f);
+        rect.pivot = new Vector2(1f, 0f);
+        rect.sizeDelta = new Vector2(420f, 30f);
+        rect.anchoredPosition = new Vector2(-24f, 20f);
     }
 
     // Кнопка «Продолжить» между «Начать игру» и «Настройки»: остальные

@@ -1,0 +1,200 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 463fe22981ce40146994b384f9e168e2, type: 3}
+  m_Name: WeaponModelCatalog
+  m_EditorClassIdentifier: 
+  entries:
+  - type: 0
+    prefab: {fileID: 2268058213282827959, guid: 4c1fe75640c250f4c8baacb446e0cda0, type: 3}
+    playerPositionOffset: {x: 0, y: 0, z: 0}
+    playerEulerOffset: {x: 0, y: 0, z: 0}
+    playerScale: 1
+  - type: 26
+    prefab: {fileID: 7320866289773951596, guid: 18dc873dc5585e4409127384d175d43b, type: 3}
+    playerPositionOffset: {x: 0, y: 0, z: 0}
+    playerEulerOffset: {x: 0, y: 0, z: 0}
+    playerScale: 1
+  - type: 1
+    prefab: {fileID: 288793967783222644, guid: 9949b3282f99df94489ee2434f0b3625, type: 3}
+    playerPositionOffset: {x: 0, y: 0, z: 0}
+    playerEulerOffset: {x: 0, y: 0, z: 0}
+    playerScale: 1
+  - type: 2
+    prefab: {fileID: 6108738448145974086, guid: 2e20f9002cb07164fb3e7b3c2b1b05c9, type: 3}
+    playerPositionOffset: {x: 0, y: 0, z: 0}
+    playerEulerOffset: {x: 0, y: 0, z: 0}
+    playerScale: 1
+  - type: 9
+    prefab: {fileID: 7480352807532435449, guid: 2286bb1a802f8964e80dca2afda63d55, type: 3}
+    playerPositionOffset: {x: 0, y: 0, z: 0}
+    playerEulerOffset: {x: 0, y: 0, z: 0}
+    playerScale: 1
+  - type: 3
+    prefab: {fileID: 3452642538461061050, guid: c7a64cbb1959cac47836d5f4e09cf026, type: 3}
+    playerPositionOffset: {x: 0, y: 0, z: 0}
+    playerEulerOffset: {x: 0, y: 0, z: 0}
+    playerScale: 1
+  - type: 4
+    prefab: {fileID: 4138166434492142714, guid: 903650fc3ec8d554aab18329d8b1ee31, type: 3}
+    playerPositionOffset: {x: 0, y: 0, z: 0}
+    playerEulerOffset: {x: 0, y: 0, z: 0}
+    playerScale: 1
+  - type: 5
+    prefab: {fileID: 8579385087954998280, guid: 842093db704541e4e8ad801719b0e514, type: 3}
+    playerPositionOffset: {x: 0, y: 0, z: 0}
+    playerEulerOffset: {x: 0, y: 0, z: 0}
+    playerScale: 1
+  - type: 6
+    prefab: {fileID: 7805052156071905858, guid: a8e8857b100d71c479bd2835ab49b41c, type: 3}
+    playerPositionOffset: {x: 0, y: 0, z: 0}
+    playerEulerOffset: {x: 0, y: 0, z: 0}
+    playerScale: 1
+  - type: 7
+    prefab: {fileID: 3382221255765038113, guid: 517a0e4ed484fa643b4ede085c6855ee, type: 3}
+    playerPositionOffset: {x: 0, y: 0, z: 0}
+    playerEulerOffset: {x: 0, y: 0, z: 0}
+    playerScale: 1
+  - type: 8
+    prefab: {fileID: 217326175674221086, guid: f7741878917dbb744b4ad5526b191768, type: 3}
+    playerPositionOffset: {x: 0, y: 0, z: 0}
+    playerEulerOffset: {x: 0, y: 0, z: 0}
+    playerScale: 1
+  - type: 10
+    prefab: {fileID: 6485026871016413540, guid: f6b19c494b63606438c92ace77742bd2, type: 3}
+    playerPositionOffset: {x: 0, y: 0, z: 0}
+    playerEulerOffset: {x: 0, y: 0, z: 0}
+    playerScale: 1
+  - type: 11
+    prefab: {fileID: 7960248333079354982, guid: eef5ef96be1a99c48a31fbc3e38cee57, type: 3}
+    playerPositionOffset: {x: 0, y: 0, z: 0}
+    playerEulerOffset: {x: 0, y: 0, z: 0}
+    playerScale: 1
+  - type: 13
+    prefab: {fileID: 9104171726948946968, guid: 5fcb71c13720c6f43899b301c4c943bc, type: 3}
+    playerPositionOffset: {x: 0, y: 0, z: 0}
+    playerEulerOffset: {x: 0, y: 0, z: 0}
+    playerScale: 1
+  - type: 14
+    prefab: {fileID: 4288415447596570640, guid: 4764463fa39987c4f9581c16d5a8b5ab, type: 3}
+    playerPositionOffset: {x: 0, y: 0, z: 0}
+    playerEulerOffset: {x: 0, y: 0, z: 0}
+    playerScale: 1
+  - type: 15
+    prefab: {fileID: 4663859031715434966, guid: ba159d9581e6cd942ae52189b764b39b, type: 3}
+    playerPositionOffset: {x: 0, y: 0, z: 0}
+    playerEulerOffset: {x: 0, y: 0, z: 0}
+    playerScale: 1
+  - type: 16
+    prefab: {fileID: 6322049083905705170, guid: 501741b7ae9498d4a802353b8f3d9b27, type: 3}
+    playerPositionOffset: {x: 0, y: 0, z: 0}
+    playerEulerOffset: {x: 0, y: 0, z: 0}
+    playerScale: 1
+  - type: 18
+    prefab: {fileID: 2235135440894464033, guid: 9fdf17009b0a96645b54aef878fee535, type: 3}
+    playerPositionOffset: {x: 0, y: 0, z: 0}
+    playerEulerOffset: {x: 0, y: 0, z: 0}
+    playerScale: 1
+  - type: 19
+    prefab: {fileID: 448533825128673026, guid: 528ee2ac083d63d429b23f5f472ebb78, type: 3}
+    playerPositionOffset: {x: 0, y: 0, z: 0}
+    playerEulerOffset: {x: 0, y: 0, z: 0}
+    playerScale: 1
+  - type: 20
+    prefab: {fileID: 2603375582329608986, guid: 5edd45cab0923f24d87daae9f48dbe59, type: 3}
+    playerPositionOffset: {x: 0, y: 0, z: 0}
+    playerEulerOffset: {x: 0, y: 0, z: 0}
+    playerScale: 1
+  - type: 21
+    prefab: {fileID: 1612413870345342729, guid: 43758bd36b3b6fa45a60c6c74f77405e, type: 3}
+    playerPositionOffset: {x: 0, y: 0, z: 0}
+    playerEulerOffset: {x: 0, y: 0, z: 0}
+    playerScale: 1
+  - type: 22
+    prefab: {fileID: 1598075042238945676, guid: 0c8a8bf05e47470459e33a6b14bdfa87, type: 3}
+    playerPositionOffset: {x: 0, y: 0, z: 0}
+    playerEulerOffset: {x: 0, y: 0, z: 0}
+    playerScale: 1
+  - type: 23
+    prefab: {fileID: 7159216861575587753, guid: ceced16c34e977c439a6882f8e8cbc50, type: 3}
+    playerPositionOffset: {x: 0, y: 0, z: 0}
+    playerEulerOffset: {x: 0, y: 0, z: 0}
+    playerScale: 1
+  - type: 25
+    prefab: {fileID: 8791410446222582262, guid: c88c835e69a390b429ca3ab2b6c17630, type: 3}
+    playerPositionOffset: {x: 0, y: 0, z: 0}
+    playerEulerOffset: {x: 0, y: 0, z: 0}
+    playerScale: 1
+  - type: 27
+    prefab: {fileID: 185670496195115472, guid: adefb6cdbfcbf25488ad983ea9e8af69, type: 3}
+    playerPositionOffset: {x: 0, y: 0, z: 0}
+    playerEulerOffset: {x: 0, y: 0, z: 0}
+    playerScale: 1
+  - type: 28
+    prefab: {fileID: 8760377228120298765, guid: c17b5ef8b5bfb41458e8f1b092deea5b, type: 3}
+    playerPositionOffset: {x: 0, y: 0, z: 0}
+    playerEulerOffset: {x: 0, y: 0, z: 0}
+    playerScale: 1
+  - type: 29
+    prefab: {fileID: 7991525898975714017, guid: 135385680e6b52a48adfc12b04130be7, type: 3}
+    playerPositionOffset: {x: 0, y: 0, z: 0}
+    playerEulerOffset: {x: 0, y: 0, z: 0}
+    playerScale: 1
+  - type: 30
+    prefab: {fileID: 2548276445369223710, guid: 5aea4f93f3856fd40a5833f74e2bdb13, type: 3}
+    playerPositionOffset: {x: 0, y: 0, z: 0}
+    playerEulerOffset: {x: 0, y: 0, z: 0}
+    playerScale: 1
+  - type: 31
+    prefab: {fileID: 5884563169202598765, guid: f87b4c7dcdc78e443994a474a3795b5d, type: 3}
+    playerPositionOffset: {x: 0, y: 0, z: 0}
+    playerEulerOffset: {x: 0, y: 0, z: 0}
+    playerScale: 1
+  - type: 33
+    prefab: {fileID: 3724755151530091218, guid: 239444dcc6f90524eb068b72400ebb5d, type: 3}
+    playerPositionOffset: {x: 0, y: 0, z: 0}
+    playerEulerOffset: {x: 0, y: 0, z: 0}
+    playerScale: 1
+  - type: 34
+    prefab: {fileID: 3125506976096402041, guid: 21a74806fa260d9409cada38540070b0, type: 3}
+    playerPositionOffset: {x: 0, y: 0, z: 0}
+    playerEulerOffset: {x: 0, y: 0, z: 0}
+    playerScale: 1
+  - type: 35
+    prefab: {fileID: 4240475703695327674, guid: b6bb078436733a540841f400342bd33c, type: 3}
+    playerPositionOffset: {x: 0, y: 0, z: 0}
+    playerEulerOffset: {x: 0, y: 0, z: 0}
+    playerScale: 1
+  - type: 36
+    prefab: {fileID: 3572303828863295399, guid: 60fe75bbc0a050449906d59c8fddf3d1, type: 3}
+    playerPositionOffset: {x: 0, y: 0, z: 0}
+    playerEulerOffset: {x: 0, y: 0, z: 0}
+    playerScale: 1
+  - type: 37
+    prefab: {fileID: 1010684212706949772, guid: 9bcbad73feebc4e45ab9362abab45a38, type: 3}
+    playerPositionOffset: {x: 0, y: 0, z: 0}
+    playerEulerOffset: {x: 0, y: 0, z: 0}
+    playerScale: 1
+  - type: 38
+    prefab: {fileID: 3916202024544502528, guid: 41496340f7d371a42a5b6ce2d62ce9f9, type: 3}
+    playerPositionOffset: {x: 0, y: 0, z: 0}
+    playerEulerOffset: {x: 0, y: 0, z: 0}
+    playerScale: 1
+  - type: 39
+    prefab: {fileID: 1840872984372234689, guid: 4b7e9921dd6778f4b9676b0369307151, type: 3}
+    playerPositionOffset: {x: 0, y: 0, z: 0}
+    playerEulerOffset: {x: 0, y: 0, z: 0}
+    playerScale: 1
+  - type: 41
+    prefab: {fileID: 619489889531958727, guid: c22194be10602e1438ef008d40c53a7a, type: 3}
+    playerPositionOffset: {x: 0, y: 0, z: 0}
+    playerEulerOffset: {x: 0, y: 0, z: 0}
+    playerScale: 1

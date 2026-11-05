@@ -17,11 +17,16 @@ public class WeaponView : MonoBehaviour
     private WeaponController weaponController;
     private PlayerController playerController;
 
-    private static readonly Vector3 WeaponRestPosition = new Vector3(0.52f, -0.34f, 0.88f);
-    private static readonly Vector3 MosinAimPosition = new Vector3(0.06f, -0.17f, 0.58f);
-    private static readonly Vector3 KnifeRestPosition = new Vector3(0.34f, -0.36f, 0.86f);
-    private static readonly Vector3 HandsRestPosition = new Vector3(0f, -0.4f, 0.86f);
+    // Оружие держим ближе к камере и крупнее — как в классических FPS,
+    // иначе модель «висит» далеко и выглядит игрушечной.
+    private static readonly Vector3 WeaponRestPosition = new Vector3(0.30f, -0.26f, 0.55f);
+    // При прицеливании оружие уходит чуть ниже и правее центра — как в CS:GO.
+    private static readonly Vector3 MosinAimPosition = new Vector3(0.10f, -0.21f, 0.50f);
+    private static readonly Vector3 KnifeRestPosition = new Vector3(0.26f, -0.30f, 0.55f);
+    private static readonly Vector3 HandsRestPosition = new Vector3(0f, -0.34f, 0.55f);
     private const float WeaponModelScale = 1.18f;
+    // Дополнительный масштаб готовых моделей только для игрока (ботам не нужен).
+    private const float PlayerModelExtraScale = 1.55f;
     private const float MeleeSwingDuration = 0.34f;
 
     private float meleeTimer;
@@ -271,6 +276,14 @@ public class WeaponView : MonoBehaviour
             return;
         }
 
+        // Если для типа оружия собрана настоящая модель — показываем её.
+        WeaponModelCatalog.Entry modelEntry = WeaponModelCatalog.Find(weapon.type);
+        if (modelEntry != null && modelEntry.prefab != null)
+        {
+            SpawnWeaponModel(weapon, modelEntry);
+            return;
+        }
+
         float muzzleOffset = 1.1f;
         switch (weapon.category)
         {
@@ -426,6 +439,41 @@ public class WeaponView : MonoBehaviour
             {
                 CreatePart(PrimitiveType.Cylinder, new Vector3(0f, 0.15f, 0.03f),
                     new Vector3(0.045f, 0.25f, 0.045f), accent);
+            }
+        }
+    }
+
+    // Ставит готовый префаб оружия. У ботов смещения не нужны: оружие
+    // крепится к кисти и уже нормализовано вокруг рукояти.
+    private void SpawnWeaponModel(WeaponDefinition weapon, WeaponModelCatalog.Entry entry)
+    {
+        GameObject model = Instantiate(entry.prefab, weaponRoot.transform);
+        model.name = entry.prefab.name;
+        model.transform.localPosition = Vector3.zero;
+        model.transform.localRotation = Quaternion.identity;
+        model.transform.localScale = Vector3.one;
+
+        if (weaponController != null && !weaponController.IsAIControlled)
+        {
+            model.transform.localPosition = entry.playerPositionOffset;
+            model.transform.localRotation = Quaternion.Euler(entry.playerEulerOffset);
+            float scale = (entry.playerScale > 0.001f ? entry.playerScale : 1f) * PlayerModelExtraScale;
+            model.transform.localScale = Vector3.one * scale;
+        }
+
+        bool showFlash = weapon.category != WeaponCategory.Melee &&
+                         weapon.category != WeaponCategory.Grenade;
+        if (muzzleFlash != null)
+        {
+            muzzleFlash.gameObject.SetActive(showFlash);
+            if (showFlash)
+            {
+                Transform muzzleMarker = model.transform.Find("Muzzle");
+                // Позицию вспышки берём в мировых координатах: модель может быть
+                // смещена и масштабирована относительно корня оружия.
+                muzzleFlash.transform.localPosition = muzzleMarker != null
+                    ? weaponRoot.transform.InverseTransformPoint(muzzleMarker.position)
+                    : new Vector3(0f, 0.02f, 0.6f);
             }
         }
     }

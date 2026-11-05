@@ -178,6 +178,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hoverColor: {r: 1, g: 1, b: 1, a: 1}
   pressedColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
+  normalTextColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
+  hoverTextColor: {r: 0.1, g: 0.13, b: 0.16, a: 1}
   hoverScale: 1.08
   pressedScale: 0.95
   hoverDuration: 0.16
@@ -278,6 +280,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   action: 9
   label: {fileID: 2090699483}
+  textColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
   listeningColor: {r: 0.95, g: 0.85, b: 0.45, a: 1}
 --- !u!1 &34779546
 GameObject:
@@ -605,6 +608,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hoverColor: {r: 1, g: 1, b: 1, a: 1}
   pressedColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
+  normalTextColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
+  hoverTextColor: {r: 0.1, g: 0.13, b: 0.16, a: 1}
   hoverScale: 1.08
   pressedScale: 0.95
   hoverDuration: 0.16
@@ -705,6 +710,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   action: 13
   label: {fileID: 101583421}
+  textColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
   listeningColor: {r: 0.95, g: 0.85, b: 0.45, a: 1}
 --- !u!1 &57882326
 GameObject:
@@ -2765,6 +2771,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hoverColor: {r: 1, g: 1, b: 1, a: 1}
   pressedColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
+  normalTextColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
+  hoverTextColor: {r: 0.1, g: 0.13, b: 0.16, a: 1}
   hoverScale: 1.5
   pressedScale: 0.9
   hoverDuration: 0.16
@@ -2824,6 +2832,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hoverColor: {r: 1, g: 1, b: 1, a: 1}
   pressedColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
+  normalTextColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
+  hoverTextColor: {r: 0.1, g: 0.13, b: 0.16, a: 1}
   hoverScale: 1.06
   pressedScale: 0.97
   hoverDuration: 0.16
@@ -3221,6 +3231,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hoverColor: {r: 1, g: 1, b: 1, a: 1}
   pressedColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
+  normalTextColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
+  hoverTextColor: {r: 0.1, g: 0.13, b: 0.16, a: 1}
   hoverScale: 1.06
   pressedScale: 0.97
   hoverDuration: 0.16
@@ -3633,6 +3645,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hoverColor: {r: 1, g: 1, b: 1, a: 1}
   pressedColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
+  normalTextColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
+  hoverTextColor: {r: 0.1, g: 0.13, b: 0.16, a: 1}
   hoverScale: 1.08
   pressedScale: 0.95
   hoverDuration: 0.16
@@ -3733,6 +3747,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   action: 3
   label: {fileID: 79490021}
+  textColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
   listeningColor: {r: 0.95, g: 0.85, b: 0.45, a: 1}
 --- !u!1 &407699839
 GameObject:
@@ -4001,6 +4016,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hoverColor: {r: 1, g: 1, b: 1, a: 1}
   pressedColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
+  normalTextColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
+  hoverTextColor: {r: 0.1, g: 0.13, b: 0.16, a: 1}
   hoverScale: 1.08
   pressedScale: 0.95
   hoverDuration: 0.16
@@ -4101,6 +4118,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   action: 4
   label: {fileID: 702011747}
+  textColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
   listeningColor: {r: 0.95, g: 0.85, b: 0.45, a: 1}
 --- !u!1 &473408288
 GameObject:
@@ -4158,6 +4176,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hoverColor: {r: 1, g: 1, b: 1, a: 1}
   pressedColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
+  normalTextColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
+  hoverTextColor: {r: 0.1, g: 0.13, b: 0.16, a: 1}
   hoverScale: 1.08
   pressedScale: 0.95
   hoverDuration: 0.16
@@ -4258,6 +4278,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   action: 15
   label: {fileID: 407699841}
+  textColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
   listeningColor: {r: 0.95, g: 0.85, b: 0.45, a: 1}
 --- !u!1 &482906932
 GameObject:
@@ -5989,6 +6010,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hoverColor: {r: 1, g: 1, b: 1, a: 1}
   pressedColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
+  normalTextColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
+  hoverTextColor: {r: 0.1, g: 0.13, b: 0.16, a: 1}
   hoverScale: 1.08
   pressedScale: 0.95
   hoverDuration: 0.16
@@ -6089,6 +6112,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   action: 1
   label: {fileID: 1899572525}
+  textColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
   listeningColor: {r: 0.95, g: 0.85, b: 0.45, a: 1}
 --- !u!1 &669026466
 GameObject:
@@ -6232,6 +6256,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hoverColor: {r: 1, g: 1, b: 1, a: 1}
   pressedColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
+  normalTextColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
+  hoverTextColor: {r: 0.1, g: 0.13, b: 0.16, a: 1}
   hoverScale: 1.08
   pressedScale: 0.95
   hoverDuration: 0.16
@@ -6332,6 +6358,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   action: 12
   label: {fileID: 1577325862}
+  textColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
   listeningColor: {r: 0.95, g: 0.85, b: 0.45, a: 1}
 --- !u!1 &686177086
 GameObject:
@@ -6515,6 +6542,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hoverColor: {r: 1, g: 1, b: 1, a: 1}
   pressedColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
+  normalTextColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
+  hoverTextColor: {r: 0.1, g: 0.13, b: 0.16, a: 1}
   hoverScale: 1.08
   pressedScale: 0.95
   hoverDuration: 0.16
@@ -6615,6 +6644,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   action: 2
   label: {fileID: 1252239950}
+  textColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
   listeningColor: {r: 0.95, g: 0.85, b: 0.45, a: 1}
 --- !u!1 &702011745
 GameObject:
@@ -7576,6 +7606,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hoverColor: {r: 1, g: 1, b: 1, a: 1}
   pressedColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
+  normalTextColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
+  hoverTextColor: {r: 0.1, g: 0.13, b: 0.16, a: 1}
   hoverScale: 1.08
   pressedScale: 0.95
   hoverDuration: 0.16
@@ -7676,6 +7708,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   action: 10
   label: {fileID: 1767025400}
+  textColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
   listeningColor: {r: 0.95, g: 0.85, b: 0.45, a: 1}
 --- !u!1 &934090509
 GameObject:
@@ -9226,6 +9259,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hoverColor: {r: 1, g: 1, b: 1, a: 1}
   pressedColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
+  normalTextColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
+  hoverTextColor: {r: 0.1, g: 0.13, b: 0.16, a: 1}
   hoverScale: 1.06
   pressedScale: 0.97
   hoverDuration: 0.16
@@ -9451,6 +9486,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hoverColor: {r: 1, g: 1, b: 1, a: 1}
   pressedColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
+  normalTextColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
+  hoverTextColor: {r: 0.1, g: 0.13, b: 0.16, a: 1}
   hoverScale: 1.08
   pressedScale: 0.95
   hoverDuration: 0.16
@@ -9551,6 +9588,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   action: 11
   label: {fileID: 934090511}
+  textColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
   listeningColor: {r: 0.95, g: 0.85, b: 0.45, a: 1}
 --- !u!1 &1247707960
 GameObject:
@@ -9608,6 +9646,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hoverColor: {r: 1, g: 1, b: 1, a: 1}
   pressedColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
+  normalTextColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
+  hoverTextColor: {r: 0.1, g: 0.13, b: 0.16, a: 1}
   hoverScale: 1.08
   pressedScale: 0.95
   hoverDuration: 0.16
@@ -9708,6 +9748,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   action: 8
   label: {fileID: 1518670325}
+  textColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
   listeningColor: {r: 0.95, g: 0.85, b: 0.45, a: 1}
 --- !u!1 &1252239948
 GameObject:
@@ -10484,6 +10525,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hoverColor: {r: 1, g: 1, b: 1, a: 1}
   pressedColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
+  normalTextColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
+  hoverTextColor: {r: 0.1, g: 0.13, b: 0.16, a: 1}
   hoverScale: 1.5
   pressedScale: 0.9
   hoverDuration: 0.16
@@ -11429,6 +11472,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hoverColor: {r: 1, g: 1, b: 1, a: 1}
   pressedColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
+  normalTextColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
+  hoverTextColor: {r: 0.1, g: 0.13, b: 0.16, a: 1}
   hoverScale: 1.08
   pressedScale: 0.95
   hoverDuration: 0.16
@@ -11529,6 +11574,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   action: 14
   label: {fileID: 729142267}
+  textColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
   listeningColor: {r: 0.95, g: 0.85, b: 0.45, a: 1}
 --- !u!1 &1542820593
 GameObject:
@@ -12181,6 +12227,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hoverColor: {r: 1, g: 1, b: 1, a: 1}
   pressedColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
+  normalTextColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
+  hoverTextColor: {r: 0.1, g: 0.13, b: 0.16, a: 1}
   hoverScale: 1.08
   pressedScale: 0.95
   hoverDuration: 0.16
@@ -12281,6 +12329,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   action: 5
   label: {fileID: 53877291}
+  textColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
   listeningColor: {r: 0.95, g: 0.85, b: 0.45, a: 1}
 --- !u!1 &1612381397
 GameObject:
@@ -12540,6 +12589,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hoverColor: {r: 1, g: 1, b: 1, a: 1}
   pressedColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
+  normalTextColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
+  hoverTextColor: {r: 0.1, g: 0.13, b: 0.16, a: 1}
   hoverScale: 1.5
   pressedScale: 0.9
   hoverDuration: 0.16
@@ -12863,6 +12914,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hoverColor: {r: 1, g: 1, b: 1, a: 1}
   pressedColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
+  normalTextColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
+  hoverTextColor: {r: 0.1, g: 0.13, b: 0.16, a: 1}
   hoverScale: 1.08
   pressedScale: 0.95
   hoverDuration: 0.16
@@ -12963,6 +13016,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   action: 7
   label: {fileID: 281145879}
+  textColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
   listeningColor: {r: 0.95, g: 0.85, b: 0.45, a: 1}
 --- !u!1 &1650096840
 GameObject:
@@ -13253,6 +13307,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hoverColor: {r: 1, g: 1, b: 1, a: 1}
   pressedColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
+  normalTextColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
+  hoverTextColor: {r: 0.1, g: 0.13, b: 0.16, a: 1}
   hoverScale: 1.12
   pressedScale: 0.94
   hoverDuration: 0.16
@@ -13313,6 +13369,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hoverColor: {r: 1, g: 1, b: 1, a: 1}
   pressedColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
+  normalTextColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
+  hoverTextColor: {r: 0.1, g: 0.13, b: 0.16, a: 1}
   hoverScale: 1.08
   pressedScale: 0.95
   hoverDuration: 0.16
@@ -13413,6 +13471,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   action: 16
   label: {fileID: 877008651}
+  textColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
   listeningColor: {r: 0.95, g: 0.85, b: 0.45, a: 1}
 --- !u!1 &1762723485
 GameObject:
@@ -14054,6 +14113,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hoverColor: {r: 1, g: 1, b: 1, a: 1}
   pressedColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
+  normalTextColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
+  hoverTextColor: {r: 0.1, g: 0.13, b: 0.16, a: 1}
   hoverScale: 1.12
   pressedScale: 0.94
   hoverDuration: 0.16
@@ -14331,6 +14392,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hoverColor: {r: 1, g: 1, b: 1, a: 1}
   pressedColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
+  normalTextColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
+  hoverTextColor: {r: 0.1, g: 0.13, b: 0.16, a: 1}
   hoverScale: 1.08
   pressedScale: 0.95
   hoverDuration: 0.16
@@ -14431,6 +14494,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   action: 0
   label: {fileID: 1414631521}
+  textColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
   listeningColor: {r: 0.95, g: 0.85, b: 0.45, a: 1}
 --- !u!1 &1828308317
 GameObject:
@@ -14487,6 +14551,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hoverColor: {r: 1, g: 1, b: 1, a: 1}
   pressedColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
+  normalTextColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
+  hoverTextColor: {r: 0.1, g: 0.13, b: 0.16, a: 1}
   hoverScale: 1.12
   pressedScale: 0.94
   hoverDuration: 0.16
@@ -15373,6 +15439,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hoverColor: {r: 1, g: 1, b: 1, a: 1}
   pressedColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
+  normalTextColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
+  hoverTextColor: {r: 0.1, g: 0.13, b: 0.16, a: 1}
   hoverScale: 1.08
   pressedScale: 0.95
   hoverDuration: 0.16
@@ -15473,6 +15541,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   action: 6
   label: {fileID: 1781975495}
+  textColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
   listeningColor: {r: 0.95, g: 0.85, b: 0.45, a: 1}
 --- !u!1 &1990612382
 GameObject:
@@ -16280,6 +16349,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hoverColor: {r: 1, g: 1, b: 1, a: 1}
   pressedColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
+  normalTextColor: {r: 0.95, g: 0.93, b: 0.86, a: 1}
+  hoverTextColor: {r: 0.1, g: 0.13, b: 0.16, a: 1}
   hoverScale: 1.5
   pressedScale: 0.9
   hoverDuration: 0.16

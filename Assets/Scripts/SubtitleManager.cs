@@ -18,6 +18,12 @@ public class SubtitleManager : MonoBehaviour
 
     private readonly Queue<string> subtitlesQueue = new Queue<string>();
 
+    // true, пока на экране есть реплики: катсцены ждут окончания фразы.
+    public bool IsShowing { get; private set; }
+
+    // Вызывается, когда очередь реплик полностью отыграла.
+    public event System.Action Finished;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -73,6 +79,7 @@ public class SubtitleManager : MonoBehaviour
 
         if (subtitlesQueue.Count > 0)
         {
+            IsShowing = true;
             StartCoroutine(PlayQueueRoutine());
         }
     }
@@ -94,6 +101,11 @@ public class SubtitleManager : MonoBehaviour
             yield return new WaitForSeconds(0.5f);
         }
 
+        IsShowing = false;
+        if (Finished != null)
+        {
+            Finished();
+        }
     }
 
     private IEnumerator FadeCanvas(float targetAlpha)

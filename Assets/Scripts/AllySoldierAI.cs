@@ -85,9 +85,17 @@ public class AllySoldierAI : MonoBehaviour
             weapons = gameObject.AddComponent<WeaponController>();
         }
 
-        if (GetComponent<AllyCombatAI>() == null)
+        AllyCombatAI combat = GetComponent<AllyCombatAI>();
+        if (combat == null)
         {
-            gameObject.AddComponent<AllyCombatAI>();
+            combat = gameObject.AddComponent<AllyCombatAI>();
+        }
+
+        // Командир подводит отряд к врагу, бойцы должны увидеть его раньше,
+        // чем противник окажется вплотную.
+        if (combat != null)
+        {
+            combat.SearchRadius = 30f;
         }
 
         // AllyCombatAI.Awake ставит оружие по умолчанию — перебиваем после его добавления
@@ -96,6 +104,12 @@ public class AllySoldierAI : MonoBehaviour
         if (GetComponent<TeamFollowPlayer>() == null)
         {
             gameObject.AddComponent<TeamFollowPlayer>();
+        }
+
+        // Без огнестрельного оружия союзник сам ищет выпавшее.
+        if (GetComponent<AllyWeaponSearch>() == null)
+        {
+            gameObject.AddComponent<AllyWeaponSearch>();
         }
 
         CharacterAnimatorDriver.AttachIfPresent(gameObject);

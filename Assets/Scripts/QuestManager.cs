@@ -56,6 +56,7 @@ public class QuestManager : MonoBehaviour
 
         textComp.text = "• " + questText;
         activeQuests.Add(questText, textComp);
+        RefreshHeights();
     }
 
     public void CompleteQuest(string questText)
@@ -70,10 +71,56 @@ public class QuestManager : MonoBehaviour
         {
             textComp.text = "<s><color=#888888>" + textComp.text + "</color></s>";
             activeQuests.Remove(questText);
+            RefreshHeights();
         }
         else
         {
             Debug.LogWarning("Cannot complete a quest that is not active: " + questText, this);
+        }
+    }
+
+    // Высота строки фиксирована (32 px), поэтому длинные задания переносились
+    // на вторую строку и наезжали на соседние. Считаем реальную высоту текста
+    // и растягиваем LayoutElement под неё.
+    private void RefreshHeights()
+    {
+        if (questContainer == null)
+        {
+            return;
+        }
+
+        RectTransform containerRect = questContainer as RectTransform;
+
+        // Сначала раскладываем, чтобы новые строки получили ширину контейнера:
+        // иначе TMP мерит высоту при нулевой ширине и выдаёт лишние переносы.
+        if (containerRect != null)
+        {
+            LayoutRebuilder.ForceRebuildLayoutImmediate(containerRect);
+        }
+
+        for (int i = 0; i < questContainer.childCount; i++)
+        {
+            TextMeshProUGUI text = questContainer.GetChild(i)
+                .GetComponent<TextMeshProUGUI>();
+            if (text == null)
+            {
+                continue;
+            }
+
+            LayoutElement layout = text.GetComponent<LayoutElement>();
+            if (layout == null)
+            {
+                layout = text.gameObject.AddComponent<LayoutElement>();
+            }
+
+            text.ForceMeshUpdate();
+            layout.minHeight = 32f;
+            layout.preferredHeight = Mathf.Max(32f, text.preferredHeight + 6f);
+        }
+
+        if (containerRect != null)
+        {
+            LayoutRebuilder.ForceRebuildLayoutImmediate(containerRect);
         }
     }
 

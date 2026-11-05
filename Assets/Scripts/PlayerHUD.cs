@@ -222,6 +222,14 @@ public class PlayerHUD : MonoBehaviour
 
     private void CreateCrosshair(Transform parent)
     {
+        // Классический крест как в Counter-Strike: четыре тонких луча,
+        // в центре — заметная «дырка», чтобы не перекрывать цель.
+        // Pivot обязательно выставляем ДО anchoredPosition, иначе UI
+        // смещает лучи на половину их размера и крест разваливается.
+        const float armLength = 10f;
+        const float thickness = 3f;
+        const float gap = 8f;
+
         crosshairLines = new Image[4];
         for (int i = 0; i < 4; i++)
         {
@@ -230,19 +238,24 @@ public class PlayerHUD : MonoBehaviour
             RectTransform rect = line.AddComponent<RectTransform>();
             rect.anchorMin = new Vector2(0.5f, 0.5f);
             rect.anchorMax = new Vector2(0.5f, 0.5f);
-            rect.sizeDelta = new Vector2(i % 2 == 0 ? 20f : 3f, i % 2 == 0 ? 3f : 20f);
-            rect.anchoredPosition = Vector2.zero;
             rect.pivot = new Vector2(0.5f, 0.5f);
+            // 0 и 1 — горизонтальные лучи (влево/вправо),
+            // 2 и 3 — вертикальные (вниз/вверх).
+            bool horizontal = i < 2;
+            rect.sizeDelta = horizontal
+                ? new Vector2(armLength, thickness)
+                : new Vector2(thickness, armLength);
+            rect.anchoredPosition = Vector2.zero;
 
             Image image = line.AddComponent<Image>();
-            image.color = new Color(1f, 1f, 1f, 0.85f);
+            image.color = new Color(1f, 1f, 1f, 0.9f);
             image.raycastTarget = false;
             crosshairLines[i] = image;
         }
 
-        crosshairLines[0].rectTransform.anchoredPosition = new Vector2(-12f, 0f);
-        crosshairLines[1].rectTransform.anchoredPosition = new Vector2(12f, 0f);
-        crosshairLines[2].rectTransform.anchoredPosition = new Vector2(0f, -12f);
-        crosshairLines[3].rectTransform.anchoredPosition = new Vector2(0f, 12f);
+        crosshairLines[0].rectTransform.anchoredPosition = new Vector2(-gap, 0f);
+        crosshairLines[1].rectTransform.anchoredPosition = new Vector2(gap, 0f);
+        crosshairLines[2].rectTransform.anchoredPosition = new Vector2(0f, -gap);
+        crosshairLines[3].rectTransform.anchoredPosition = new Vector2(0f, gap);
     }
 }

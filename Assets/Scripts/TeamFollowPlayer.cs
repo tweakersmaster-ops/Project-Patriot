@@ -2,20 +2,30 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
+// Союзник идёт за командиром отряда (leader) и держится в 4–6 м.
+// Если командир не задан — старое поведение: идти за игроком.
 [RequireComponent(typeof(CharacterController))]
 public class TeamFollowPlayer : MonoBehaviour
 {
     private static readonly List<TeamFollowPlayer> ActiveFollowers = new List<TeamFollowPlayer>();
 
-    public float followSpeed = 3.5f;
-    public float followDistance = 2f;
-    public float spacing = 1.25f;
+    [Header("Кого слушаемся")]
+    public Transform leader;              // Командир отряда; пусто — игрок
+
+    [Header("Дистанция")]
+    public float minDistance = 4f;        // Ближе не подходить
+    public float maxDistance = 6f;        // Дальше — догонять
+    public float followSpeed = 4.2f;
     public float rotationSpeed = 8f;
+
+    [Header("Бой")]
     public float targetSearchRadius = 15f;
     public float targetSearchInterval = 0.35f;
+
     public float gravity = -9.81f;
 
     private float verticalVelocity;
+    private float currentSpeed;
 
     private CharacterController controller;
     private NavMeshAgent agent;
@@ -44,8 +54,6 @@ public class TeamFollowPlayer : MonoBehaviour
         controller = GetComponent<CharacterController>();
         agent = GetComponent<NavMeshAgent>();
 
-        // Союзник идёт по запечённому NavMesh, если под ним есть навигация.
-        // AllySoldierAI уже поднял агента; здесь только проверяем состояние.
         useAgent = agent != null && agent.enabled && agent.isOnNavMesh;
         if (useAgent)
         {
@@ -136,32 +144,123 @@ public class TeamFollowPlayer : MonoBehaviour
             }
         }
 
-        GameContext context = GameContext.Instance;
-        player = context != null ? context.Player : null;
-
-        if (useAgent)
+        Transform followTarget = leader;
+        if (followTarget == null)
         {
-            FollowPlayerOnNavMesh();
+            GameContext context = GameContext.Instance;
+            player = context != null ? context.Player : null;
+            followTarget = player != null ? player.transform : null;
+        }
+
+        if (followTarget == null)
+        {
+            StopMoving();
             return;
         }
 
-        Vector3 horizontalMovement = Vector3.zero;
-        if (player != null)
-        {
-            Vector3 targetPosition = GetFormationPosition();
-            Vector3 offset = targetPosition - transform.position;
-            offset.y = 0f;
+        Vector3 toLeader = followTarget.position - transform.position;
+        toLeader.y = 0f;
+        float distance = toLeader.magnitude;
 
-            if (offset.magnitude > 0.25f)
+        // Точка строя в 5 м за командиром держит дистанцию 4–6 м.
+        // Отстали больше чем на maxDistance — догоняем быстрее командира.
+        currentSpeed = distance > maxDistance
+            ? followSpeed * 1.6f
+            : followSpeed;
+
+        Vector3 targetPosition = GetFormationPosition(followTarget);
+
+        if (useAgent)
+        {
+            FollowOnNavMesh(targetPosition, followTarget);
+            return;
+        }
+
+        MoveOnController(targetPosition);
+    }
+
+    // Точка строя: за командиром (~5 м), чуть в сторону, чтобы не слипались.
+    private Vector3 GetFormationPosition(Transform followTarget)
+    {
+        int slot = ActiveFollowers.IndexOf(this);
+        if (slot < 0)
+        {
+            slot = 0;
+        }
+
+        float side = (slot - (ActiveFollowers.Count - 1) * 0.5f) * 1.2f;
+        // Целимся ближе к ближней границе: пока идём, отстаём на ~1 м.
+        float behind = minDistance + (maxDistance - minDistance) * 0.25f;
+        return followTarget.position - followTarget.forward * behind + followTarget.right * side;
+    }
+
+    private void FollowOnNavMesh(Vector3 targetPosition, Transform followTarget)
+    {
+        if (agent == null || !agent.enabled || !agent.isOnNavMesh)
+        {
+            StopMoving();
+            return;
+        }
+
+        Vector3 destination;
+        if (!NavMeshCharacterUtility.TryGetNavPoint(targetPosition, 3f, out destination))
+        {
+            // Точка строя ушла в стену — идём хотя бы к командиру,
+            // иначе отстающий застревает, а командир его ждёт вечно.
+            if (followTarget == null ||
+                !NavMeshCharacterUtility.TryGetNavPoint(followTarget.position, 4f, out destination))
             {
-                horizontalMovement = offset.normalized * followSpeed;
-                Quaternion targetRotation = Quaternion.LookRotation(horizontalMovement);
-                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * rotationSpeed);
+                StopMoving();
+                return;
             }
         }
 
-        // Гравитация нужна, чтобы CharacterController реально касался земли
-        // (isGrounded) и аниматор не показывал падение.
+        Vector3 offset = destination - transform.position;
+        offset.y = 0f;
+        if (offset.magnitude <= 0.75f)
+        {
+            StopMoving();
+            return;
+        }
+
+        NavMeshCharacterUtility.Resume(agent);
+        agent.speed = currentSpeed;
+        if ((agent.destination - destination).sqrMagnitude > 0.36f)
+        {
+            agent.SetDestination(destination);
+        }
+
+        Vector3 velocity = agent.desiredVelocity;
+        velocity.y = 0f;
+        if (velocity.sqrMagnitude > 0.04f)
+        {
+            transform.rotation = Quaternion.Slerp(
+                transform.rotation,
+                Quaternion.LookRotation(velocity.normalized),
+                Time.deltaTime * rotationSpeed);
+        }
+    }
+
+    private void MoveOnController(Vector3 targetPosition)
+    {
+        if (controller == null || !controller.enabled)
+        {
+            return;
+        }
+
+        Vector3 offset = targetPosition - transform.position;
+        offset.y = 0f;
+
+        Vector3 horizontalMovement = Vector3.zero;
+        if (offset.magnitude > 0.25f)
+        {
+            horizontalMovement = offset.normalized * currentSpeed;
+            transform.rotation = Quaternion.Slerp(
+                transform.rotation,
+                Quaternion.LookRotation(horizontalMovement),
+                Time.deltaTime * rotationSpeed);
+        }
+
         if (controller.isGrounded && verticalVelocity < 0f)
         {
             verticalVelocity = -2f;
@@ -176,63 +275,12 @@ public class TeamFollowPlayer : MonoBehaviour
         controller.Move(movement);
     }
 
-    // Движение по запечённому NavMesh: агент сам обходит стены и мебель.
-    private void FollowPlayerOnNavMesh()
+    private void StopMoving()
     {
-        if (player == null || agent == null || !agent.enabled || !agent.isOnNavMesh)
+        if (useAgent && agent != null)
         {
             NavMeshCharacterUtility.Stop(agent);
-            return;
         }
-
-        // Точка строя считается от корня игрока (он выше земли на 1.8 м),
-        // поэтому проецируем её на навигацию.
-        Vector3 targetPosition;
-        if (!NavMeshCharacterUtility.TryGetNavPoint(GetFormationPosition(), 3f, out targetPosition))
-        {
-            NavMeshCharacterUtility.Stop(agent);
-            return;
-        }
-
-        Vector3 offset = targetPosition - transform.position;
-        offset.y = 0f;
-
-        if (offset.magnitude <= 0.6f)
-        {
-            NavMeshCharacterUtility.Stop(agent);
-            return;
-        }
-
-        NavMeshCharacterUtility.Resume(agent);
-        agent.speed = followSpeed;
-        if ((agent.destination - targetPosition).sqrMagnitude > 0.36f)
-        {
-            agent.SetDestination(targetPosition);
-        }
-
-        Vector3 velocity = agent.desiredVelocity;
-        velocity.y = 0f;
-        if (velocity.sqrMagnitude > 0.04f)
-        {
-            transform.rotation = Quaternion.Slerp(
-                transform.rotation,
-                Quaternion.LookRotation(velocity.normalized),
-                Time.deltaTime * rotationSpeed);
-        }
-    }
-
-    private Vector3 GetFormationPosition()
-    {
-        int slot = ActiveFollowers.IndexOf(this);
-        if (slot < 0)
-        {
-            slot = 0;
-        }
-
-        int row = slot / 2;
-        float side = slot % 2 == 0 ? -spacing * 0.5f : spacing * 0.5f;
-        float behind = followDistance + row * spacing;
-        return player.transform.position - player.transform.forward * behind + player.transform.right * side;
     }
 
     private EnemyAI FindNearestEnemy()

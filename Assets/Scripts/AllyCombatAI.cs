@@ -1,9 +1,19 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+// Боевой ИИ союзника: ищет немцев, но стреляет только при чистой линии
+// огня. Стена отменяет выстрел, а если на линии свой (тег team) или
+// игрок — союзник не стреляет и меняет позицию (отходит за игроком).
 [RequireComponent(typeof(WeaponController))]
 public sealed class AllyCombatAI : MonoBehaviour
 {
+    private enum ShotCheck
+    {
+        Clear,
+        WallBlocked,
+        FriendlyBlocked
+    }
+
     [SerializeField] private string enemyTag = "enemy";
     [SerializeField, Min(1f)] private float searchRadius = 20f;
     [SerializeField, Min(0.05f)] private float searchInterval = 0.25f;
@@ -11,12 +21,17 @@ public sealed class AllyCombatAI : MonoBehaviour
     [SerializeField] private WeaponType startingWeapon = WeaponType.Mosin;
     [SerializeField] private Transform weaponViewAnchor;
 
+    [Header("Перепозиционирование")]
+    [SerializeField, Min(0.1f)] private float repositionTime = 1.8f;
+
     private WeaponController weaponController;
     private Transform currentTarget;
     private Transform weaponHand;
     private float nextSearchTime;
+    private float repositionUntil;
 
     public Transform CurrentTarget => currentTarget;
+
     public float SearchRadius
     {
         get => searchRadius;
@@ -48,27 +63,50 @@ public sealed class AllyCombatAI : MonoBehaviour
             return;
         }
 
-        if (currentTarget != null && !HasLineOfSight(currentTarget))
+        KeepWeaponVisible();
+
+        bool repositioning = Time.time < repositionUntil;
+
+        if (currentTarget != null)
         {
-            // За стеной цель не видна — отпускаем её, чтобы союзник шёл за
-            // игроком, а не стрелял в стену из коровника.
-            currentTarget = null;
-            nextSearchTime = Time.time + searchInterval;
+            ShotCheck check = CheckShot(currentTarget);
+            if (check != ShotCheck.Clear)
+            {
+                // Стена или свой на линии — не стреляем.
+                currentTarget = null;
+                weaponController.SetAICombatTarget(null);
+
+                if (check == ShotCheck.FriendlyBlocked)
+                {
+                    // Даём TeamFollowPlayer увести союзника на другую точку
+                    // строя: пауза в поиске цели.
+                    repositionUntil = Time.time + repositionTime;
+                }
+
+                nextSearchTime = Time.time + searchInterval;
+            }
         }
 
-        if (currentTarget == null || IsInvalidTarget(currentTarget))
+        if (currentTarget != null && IsInvalidTarget(currentTarget))
         {
             currentTarget = null;
         }
 
-        if (currentTarget == null && Time.time >= nextSearchTime)
+        if (currentTarget == null && !repositioning && Time.time >= nextSearchTime)
         {
             currentTarget = FindNearestEnemy();
             nextSearchTime = Time.time + searchInterval;
         }
 
         weaponController.SetAICombatTarget(currentTarget);
-        if (currentTarget == null || !CombatSettings.AimingEnabled)
+        if (currentTarget == null)
+        {
+            // SetAICombatTarget прячет оружие без цели — возвращаем его в руки.
+            KeepWeaponVisible();
+            return;
+        }
+
+        if (!CombatSettings.AimingEnabled)
         {
             return;
         }
@@ -85,38 +123,50 @@ public sealed class AllyCombatAI : MonoBehaviour
         }
     }
 
+    // Оружие в руках у союзника видно всегда, даже без цели.
+    private void KeepWeaponVisible()
+    {
+        if (weaponController == null)
+        {
+            return;
+        }
+
+        WeaponDefinition weapon = weaponController.CurrentWeapon;
+        bool hasFirearm = weapon != null &&
+                          weapon.type != WeaponType.Hands &&
+                          weapon.type != WeaponType.Knife &&
+                          weapon.behavior != WeaponBehavior.Melee;
+        weaponController.SetAIWeaponDrawn(hasFirearm);
+    }
+
+    // Ищем по Health, а не по EnemyAI.ActiveEnemyList: у охраны EnemyAI
+    // выключен (GuardPatrolAI), но это живые немцы, и стрелять по ним нужно.
     private Transform FindNearestEnemy()
     {
         Transform nearest = null;
         float nearestDistanceSquared = searchRadius * searchRadius;
-        IReadOnlyList<EnemyAI> activeEnemies = EnemyAI.ActiveEnemyList;
-        for (int i = 0; i < activeEnemies.Count; i++)
+        Health[] allHealth = FindObjectsOfType<Health>();
+        for (int i = 0; i < allHealth.Length; i++)
         {
-            EnemyAI enemyAI = activeEnemies[i];
-            if (enemyAI == null)
+            Health health = allHealth[i];
+            if (health == null || health.IsDead)
             {
                 continue;
             }
 
-            Transform enemy = enemyAI.transform;
+            Transform enemy = health.transform;
             if (enemy == transform || enemy.IsChildOf(transform) ||
                 !enemy.CompareTag(enemyTag) || enemy.CompareTag("team"))
             {
                 continue;
             }
 
-            Health health = enemy.GetComponentInParent<Health>();
-            if (health != null && health.IsDead)
+            float distanceSquared = (enemy.position - transform.position).sqrMagnitude;
+            // Берём только тех, кого реально видно и по кому можно стрелять:
+            // иначе союзник замирает внутри коровника, «целясь» в стену.
+            if (distanceSquared < nearestDistanceSquared && CheckShot(enemy) == ShotCheck.Clear)
             {
-                continue;
-            }
-
-            float distanceSquared = (enemy.transform.position - transform.position).sqrMagnitude;
-            // Берём только тех, кого реально видно: иначе союзник замирает
-            // внутри коровника, «целясь» в немца за стеной.
-            if (distanceSquared < nearestDistanceSquared && HasLineOfSight(enemy.transform))
-            {
-                nearest = enemy.transform;
+                nearest = enemy;
                 nearestDistanceSquared = distanceSquared;
             }
         }
@@ -124,25 +174,104 @@ public sealed class AllyCombatAI : MonoBehaviour
         return nearest;
     }
 
-    // Проверка прямой видимости: стены и прочая геометрия мешают стрельбе.
-    private bool HasLineOfSight(Transform target)
+    // Линия выстрела от груди до цели. Ближайшее попадание решает:
+    // цель — можно, свой или игрок — нельзя, стена — нельзя.
+    private ShotCheck CheckShot(Transform target)
     {
         if (target == null)
+        {
+            return ShotCheck.WallBlocked;
+        }
+
+        Vector3 origin = transform.position + Vector3.up * -0.6f;
+
+        // Целимся в коллайдер цели (примерно центр туловища), а не в корень:
+        // у ботов с низким корнем точка «корень − 0.3» уходит под землю,
+        // и луч всегда упирался в террейн — союзник не мог выстрелить вплотную.
+        Collider targetCollider = target.GetComponent<Collider>();
+        if (targetCollider == null)
+        {
+            targetCollider = target.GetComponentInChildren<Collider>();
+        }
+
+        // Без коллайдера цель неубиваема — по ней нельзя стрелять.
+        if (targetCollider == null)
+        {
+            return ShotCheck.WallBlocked;
+        }
+
+        Vector3 aimPoint = targetCollider.bounds.center;
+
+        Vector3 direction = aimPoint - origin;
+        float distance = direction.magnitude;
+        if (distance < 0.01f)
+        {
+            return ShotCheck.Clear;
+        }
+
+        direction /= distance;
+
+        RaycastHit[] hits = Physics.RaycastAll(
+            origin,
+            direction,
+            distance + 0.5f,
+            Physics.DefaultRaycastLayers,
+            QueryTriggerInteraction.Ignore);
+
+        RaycastHit closest = default(RaycastHit);
+        bool hasClosest = false;
+        float closestDistance = float.MaxValue;
+        for (int i = 0; i < hits.Length; i++)
+        {
+            // Собственные коллайдеры стрельбе не мешают.
+            if (hits[i].collider == null || hits[i].collider.transform.IsChildOf(transform))
+            {
+                continue;
+            }
+
+            if (hits[i].distance < closestDistance)
+            {
+                closestDistance = hits[i].distance;
+                closest = hits[i];
+                hasClosest = true;
+            }
+        }
+
+        if (!hasClosest)
+        {
+            return ShotCheck.Clear;
+        }
+
+        Health health = closest.collider.GetComponentInParent<Health>();
+        if (health == null)
+        {
+            // Стена, забор, техника — пуля не пройдёт.
+            return ShotCheck.WallBlocked;
+        }
+
+        if (IsTargetCollider(closest.collider.transform, target))
+        {
+            return ShotCheck.Clear;
+        }
+
+        if (closest.collider.CompareTag("team") || closest.collider.CompareTag("Player") ||
+            closest.collider.GetComponentInParent<PlayerController>() != null)
+        {
+            return ShotCheck.FriendlyBlocked;
+        }
+
+        // Другой персонаж (в том числе чужой немец) физически закрывает линию.
+        return ShotCheck.WallBlocked;
+    }
+
+    private static bool IsTargetCollider(Transform colliderTransform, Transform target)
+    {
+        if (colliderTransform == null || target == null)
         {
             return false;
         }
 
-        Vector3 origin = transform.position + Vector3.up * -0.4f;
-        Vector3 aim = target.position + Vector3.up * -0.4f;
-        RaycastHit hit;
-        if (!Physics.Linecast(origin, aim, out hit, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
-        {
-            return true;
-        }
-
-        // Другой персонаж на линии стрельбе не мешает: WeaponController
-        // пропускает своих и бьёт дальнюю цель.
-        return hit.collider.GetComponentInParent<Health>() != null;
+        return colliderTransform == target || colliderTransform.IsChildOf(target);
     }
 
     private bool IsInvalidTarget(Transform target)
@@ -161,7 +290,7 @@ public sealed class AllyCombatAI : MonoBehaviour
         if (weaponViewAnchor != null && weaponHand != null)
         {
             weaponViewAnchor.position = weaponHand.position;
-            weaponViewAnchor.rotation = transform.rotation;
+            weaponViewAnchor.rotation = transform.rotation * Quaternion.Euler(-18f, 0f, 0f);
         }
     }
 

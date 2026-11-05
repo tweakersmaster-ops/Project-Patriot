@@ -1,12 +1,20 @@
 using UnityEngine;
 
+// Лежащее оружие. Игрок подбирает его кнопкой G, когда находится в зоне:
+// автоматического подбора при касании больше нет. Союзники подбирают
+// через AllyWeaponSearch (TryTake).
 public class WeaponPickup : MonoBehaviour
 {
     public WeaponType weaponType;
+    public string prompt = "Нажмите G, чтобы подобрать";
 
     private GameObject pickupRoot;
     private bool isDroppedWeapon;
     private bool wasPickedUp;
+    private PlayerController playerInRange;
+
+    public bool IsAvailable => !wasPickedUp;
+    public WeaponType WeaponType => weaponType;
 
     private void Start()
     {
@@ -79,6 +87,30 @@ public class WeaponPickup : MonoBehaviour
         triggerObject.transform.position = hasBounds ? bounds.center : transform.position;
     }
 
+    private void Update()
+    {
+        if (wasPickedUp)
+        {
+            return;
+        }
+
+        if (playerInRange == null)
+        {
+            return;
+        }
+
+        PickupPromptUI.Show(prompt);
+
+        if (Input.GetKeyDown(KeyCode.G))
+        {
+            WeaponController weapons = playerInRange.GetComponent<WeaponController>();
+            if (weapons != null)
+            {
+                TryTake(weapons);
+            }
+        }
+    }
+
     private void OnTriggerEnter(Collider other)
     {
         if (wasPickedUp)
@@ -86,14 +118,45 @@ public class WeaponPickup : MonoBehaviour
             return;
         }
 
-        WeaponController weaponController = other.GetComponentInParent<WeaponController>();
-        if (weaponController == null)
+        PlayerController player = other.GetComponentInParent<PlayerController>();
+        if (player != null)
         {
-            return;
+            playerInRange = player;
+        }
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        PlayerController player = other.GetComponentInParent<PlayerController>();
+        if (player != null && player == playerInRange)
+        {
+            playerInRange = null;
+            PickupPromptUI.Hide();
+        }
+    }
+
+    // Забрать оружие (игрок по G или союзник через AllyWeaponSearch).
+    public bool TryTake(WeaponController weaponController)
+    {
+        if (wasPickedUp || weaponController == null)
+        {
+            return false;
         }
 
         wasPickedUp = true;
+        playerInRange = null;
         weaponController.PickUpWeapon(weaponType);
+        PickupPromptUI.Hide();
         Destroy(pickupRoot != null ? pickupRoot : gameObject);
+        return true;
+    }
+
+    private void OnDisable()
+    {
+        if (playerInRange != null)
+        {
+            playerInRange = null;
+            PickupPromptUI.Hide();
+        }
     }
 }

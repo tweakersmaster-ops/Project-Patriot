@@ -18,7 +18,8 @@ public class CharacterIK : MonoBehaviour
 
     [Header("Ноги")]
     [Range(0f, 1f)] public float footIkWeight = 0.75f;
-    [Range(0f, 1f)] public float footRotationWeight = 0.5f;
+    // Доворот ступни по нормали ломал кости стопы на неровной траве.
+    [Range(0f, 1f)] public float footRotationWeight = 0f;
     [Tooltip("Высота, с которой начинается луч под ступнёй")]
     public float footRayStart = 0.6f;
     [Tooltip("Длина луча от точки старта вниз")]
@@ -134,22 +135,55 @@ public class CharacterIK : MonoBehaviour
             return;
         }
 
+        // Считаем габариты только по модели оружия. ParticleSystem вспышки
+        // выстрела имеет bounds во весь уровень — из-за него цель для левой
+        // руки уезжала за сотни метров, и рука вытягивалась в сторону.
         Renderer[] renderers = weapon.GetComponentsInChildren<Renderer>(true);
-        if (renderers.Length == 0)
+        bool hasBounds = false;
+        Bounds bounds = default(Bounds);
+        for (int i = 0; i < renderers.Length; i++)
         {
+            Renderer renderer = renderers[i];
+            if (renderer == null || !renderer.enabled ||
+                renderer is ParticleSystemRenderer)
+            {
+                continue;
+            }
+
+            if (!hasBounds)
+            {
+                bounds = renderer.bounds;
+                hasBounds = true;
+            }
+            else
+            {
+                bounds.Encapsulate(renderer.bounds);
+            }
+        }
+
+        if (!hasBounds)
+        {
+            animator.SetIKPositionWeight(AvatarIKGoal.LeftHand, 0f);
+            animator.SetIKRotationWeight(AvatarIKGoal.LeftHand, 0f);
+            animator.SetIKHintPositionWeight(AvatarIKHint.LeftElbow, 0f);
             return;
         }
 
-        Bounds bounds = renderers[0].bounds;
-        for (int i = 1; i < renderers.Length; i++)
+        // Берём фактическое направление ствола, а не поворот корня:
+        // у ботов оружие наклонено вверх, и рука должна тянуться туда же.
+        Vector3 forward = weapon.forward;
+        float halfLength = Mathf.Abs(Vector3.Dot(bounds.extents, forward));
+
+        // Страховка: если габариты всё же неадекватные, IK не трогаем,
+        // иначе рука выворачивается через всё тело.
+        if (halfLength > 2f || halfLength < 0.02f)
         {
-            bounds.Encapsulate(renderers[i].bounds);
+            animator.SetIKPositionWeight(AvatarIKGoal.LeftHand, 0f);
+            animator.SetIKRotationWeight(AvatarIKGoal.LeftHand, 0f);
+            animator.SetIKHintPositionWeight(AvatarIKHint.LeftElbow, 0f);
+            return;
         }
 
-        // Оружие у ботов смотрит вперёд персонажа (WeaponView у AI-режима
-        // обнуляет локальный поворот и наследует поворот корня).
-        Vector3 forward = transform.forward;
-        float halfLength = Mathf.Abs(Vector3.Dot(bounds.extents, forward));
         Vector3 target = bounds.center + forward * (halfLength * foregripPosition);
         target += Vector3.up * 0.02f;
 
@@ -172,6 +206,14 @@ public class CharacterIK : MonoBehaviour
     private void ApplyFootIK()
     {
         if (footIkWeight <= 0f)
+        {
+            ClearFootWeights();
+            return;
+        }
+
+        // В движении ступнями управляет анимация: IK на каждом кадре
+        // прижимал ступни к земле, и шаг выглядел как «колени без стоп».
+        if (GetHorizontalSpeed() >= standSpeedThreshold)
         {
             ClearFootWeights();
             return;
@@ -238,8 +280,16 @@ public class CharacterIK : MonoBehaviour
 
         animator.SetIKPositionWeight(goal, footIkWeight);
         animator.SetIKPosition(goal, target);
-        animator.SetIKRotationWeight(goal, footRotationWeight);
-        animator.SetIKRotation(goal, Quaternion.FromToRotation(Vector3.up, hit.normal) * foot.rotation);
+
+        if (footRotationWeight > 0f)
+        {
+            animator.SetIKRotationWeight(goal, footRotationWeight);
+            animator.SetIKRotation(goal, Quaternion.FromToRotation(Vector3.up, hit.normal) * foot.rotation);
+        }
+        else
+        {
+            animator.SetIKRotationWeight(goal, 0f);
+        }
     }
 
     private bool RayFootGround(Vector3 footPos, out RaycastHit best)

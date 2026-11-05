@@ -23,6 +23,11 @@ public class GuardPatrolAI : MonoBehaviour
     [Header("Гравитация")]
     public float gravity = -12f;
 
+    [Header("Навигация")]
+    // При загрузке сцены NavMeshAgent иногда не успевает встать на полигон
+    // в кадре Start. Включаем повторные попытки для новых врагов (Мария).
+    public bool retryAgentActivation;
+
     private CharacterController controller;
     private NavMeshAgent agent;
     private Health health;
@@ -36,6 +41,7 @@ public class GuardPatrolAI : MonoBehaviour
     private float nextRepathTime;
     private float verticalVelocity;
     private bool useAgent;
+    private float nextAgentRetryTime;
 
     private void Start()
     {
@@ -86,6 +92,43 @@ public class GuardPatrolAI : MonoBehaviour
         if (playerObject != null)
         {
             player = playerObject.transform;
+        }
+
+    }
+
+    // При загрузке сцены NavMeshAgent не всегда регистрируется в кадре Start.
+    // Пока флаг включён, раз в полсекунды пробуем включить агента снова.
+    private void RetryAgentActivationTick()
+    {
+        if (useAgent || agent == null || Time.time < nextAgentRetryTime)
+        {
+            return;
+        }
+
+        nextAgentRetryTime = Time.time + 0.5f;
+
+        Vector3 feet = transform.position - Vector3.up * NavMeshCharacterUtility.DefaultFootOffset;
+        NavMeshHit navHit;
+        if (!NavMesh.SamplePosition(feet, out navHit, 1.2f, NavMesh.AllAreas))
+        {
+            return;
+        }
+
+        if (!NavMeshCharacterUtility.TryActivate(gameObject, agent, moveSpeed, 0.4f, 0.35f))
+        {
+            return;
+        }
+
+        if (!AreWaypointsNavigable())
+        {
+            agent.enabled = false;
+            return;
+        }
+
+        useAgent = true;
+        if (controller != null)
+        {
+            controller.enabled = false;
         }
     }
 
@@ -144,6 +187,11 @@ public class GuardPatrolAI : MonoBehaviour
 
     private void Update()
     {
+        if (!useAgent && retryAgentActivation)
+        {
+            RetryAgentActivationTick();
+        }
+
         if (health != null && health.IsDead)
         {
             if (useAgent)

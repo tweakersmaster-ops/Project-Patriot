@@ -1297,6 +1297,7 @@ MonoBehaviour:
   rotationSpeed: 8
   startingWeapon: 24
   weaponViewAnchor: {fileID: 0}
+  repositionTime: 1.8
 --- !u!114 &226012263296864556
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1324,17 +1325,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 47720d364161efd428f5e23ed636ea26, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  handIkWeight: 1
+  handIkWeight: 0.85
   elbowHintWeight: 0.45
   foregripPosition: 0.55
-  footIkWeight: 0.75
-  footRotationWeight: 0.5
+  footIkWeight: 0.7
+  footRotationWeight: 0
   footRayStart: 0.6
   footRayLength: 1.6
   ankleOffset: 0.06
   plantRange: 0.15
   maxLift: 0.12
   maxDrop: 0.4
+  standSpeedThreshold: 0.15
   groundMask:
     serializedVersion: 2
     m_Bits: 4294967295

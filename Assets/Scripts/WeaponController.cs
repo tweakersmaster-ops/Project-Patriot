@@ -121,6 +121,19 @@ public class WeaponController : MonoBehaviour
         }
     }
 
+    // Ботам оружие нужно в руках и без боя: AI-режим сам его не достаёт,
+    // пока нет цели. Отдельный сеттер для визуала.
+    public void SetAIWeaponDrawn(bool drawn)
+    {
+        if (!isAIControlled || weaponIsDrawn == drawn)
+        {
+            return;
+        }
+
+        weaponIsDrawn = drawn;
+        OnWeaponDrawChanged?.Invoke(weaponIsDrawn);
+    }
+
     private void Update()
     {
         if (GameContext.Instance != null && GameContext.Instance.IsPaused)
@@ -136,7 +149,18 @@ public class WeaponController : MonoBehaviour
             UpdateAimZoom();
             if (aiTarget != null && !isReloading && Time.time >= nextShotTime)
             {
-                Fire();
+                if (currentAmmo <= 0 && CurrentWeapon != null &&
+                    CurrentWeapon.behavior != WeaponBehavior.Melee)
+                {
+                    // Боезапас ботов не кончается: иначе отряд расстреливает
+                    // магазин и молча стоит рядом с живым немцем.
+                    ReplenishAIAmmo();
+                    StartCoroutine(ReloadWeapon());
+                }
+                else
+                {
+                    Fire();
+                }
             }
 
             return;
@@ -614,6 +638,28 @@ public class WeaponController : MonoBehaviour
 
         int nextIndex = (currentWeaponIndex + direction + weapons.Count) % weapons.Count;
         EquipWeapon(weapons[nextIndex].type);
+    }
+
+    // У ботов запас патронов бесконечный: выдаём магазин перед перезарядкой.
+    private void ReplenishAIAmmo()
+    {
+        if (CurrentWeapon == null)
+        {
+            return;
+        }
+
+        AmmoState ammoState;
+        if (!ammoByWeapon.TryGetValue(CurrentWeapon.type, out ammoState))
+        {
+            ammoState = new AmmoState();
+            ammoByWeapon[CurrentWeapon.type] = ammoState;
+        }
+
+        if (ammoState.reserve < CurrentWeapon.magazineSize)
+        {
+            ammoState.reserve = CurrentWeapon.magazineSize;
+            reserveAmmo = ammoState.reserve;
+        }
     }
 
     private IEnumerator ReloadWeapon()

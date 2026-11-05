@@ -17,8 +17,15 @@ public class PaddockDoor : MonoBehaviour
     public float openSpeed = 120f;
     public bool requiresKey = true;
     public bool autoOpenWithKey = true;           // Открывается сама, если у игрока есть ключ и он подошёл
+    public bool deferPrisonerActivation;          // Пленных включает катсцена (PaddockCutscene), а не дверь
+    public bool npcAutoOpen = true;               // Боты (team/enemy) открывают дверь сами
+
+    // Событие открытия двери. На него подписывается PaddockDoorTrigger,
+    // чтобы выдать квест/титры в момент, когда ворота реально открылись.
+    public event System.Action Opened;
 
     private bool isOpen;
+    private float nextNpcCheckTime;
     private Quaternion closedRotation;
     private Quaternion openRotation;
     private Quaternion closedRotation2;
@@ -68,6 +75,17 @@ public class PaddockDoor : MonoBehaviour
             return;
         }
 
+        // Союзники и немцы открывают дверь сами, без ключа.
+        if (npcAutoOpen && Time.time >= nextNpcCheckTime)
+        {
+            nextNpcCheckTime = Time.time + 0.3f;
+            if (HasNpcBeside())
+            {
+                Open();
+                return;
+            }
+        }
+
         PlayerController player = GameContext.Instance != null ? GameContext.Instance.Player : null;
         if (player == null)
         {
@@ -100,6 +118,37 @@ public class PaddockDoor : MonoBehaviour
         }
     }
 
+    // Рядом стоит живой бот с тегом team или enemy.
+    private bool HasNpcBeside()
+    {
+        Collider[] hits = Physics.OverlapSphere(
+            transform.position,
+            interactDistance + 0.5f,
+            Physics.DefaultRaycastLayers,
+            QueryTriggerInteraction.Ignore);
+
+        for (int i = 0; i < hits.Length; i++)
+        {
+            if (hits[i] == null)
+            {
+                continue;
+            }
+
+            Health health = hits[i].GetComponentInParent<Health>();
+            if (health == null || health.IsDead)
+            {
+                continue;
+            }
+
+            if (health.CompareTag("team") || health.CompareTag("enemy"))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private static void DisableNavObstacles(Transform root)
     {
         if (root == null)
@@ -114,8 +163,13 @@ public class PaddockDoor : MonoBehaviour
         }
     }
 
-    private void Open()
+    public void Open()
     {
+        if (isOpen)
+        {
+            return;
+        }
+
         isOpen = true;
 
         // Закрытые створки перекрывают NavMesh (NavMeshObstacle с carving).
@@ -124,7 +178,7 @@ public class PaddockDoor : MonoBehaviour
         DisableNavObstacles(pivot);
         DisableNavObstacles(secondPivot);
 
-        if (prisonersToActivate != null)
+        if (prisonersToActivate != null && !deferPrisonerActivation)
         {
             for (int i = 0; i < prisonersToActivate.Length; i++)
             {
@@ -133,6 +187,11 @@ public class PaddockDoor : MonoBehaviour
                     prisonersToActivate[i].SetActive(true);
                 }
             }
+        }
+
+        if (Opened != null)
+        {
+            Opened();
         }
     }
 }
